@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -59,10 +58,7 @@ class AuthProvider extends ChangeNotifier {
         break;
     }
 
-    if (value.isNotEmpty) {
-      return value;
-    }
-    return dotenv.env[key];
+    return value.isNotEmpty ? value : null;
   }
 
   void _validateEnv() {
