@@ -35,19 +35,49 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  String? _getConfigValue(String key) {
+    // Priority: dart-define (literal required for web) > dotenv
+    String value = '';
+    switch (key) {
+      case 'OAUTH_CLIENT_ID':
+        value = const String.fromEnvironment('OAUTH_CLIENT_ID');
+        break;
+      case 'OAUTH_CLIENT_SECRET':
+        value = const String.fromEnvironment('OAUTH_CLIENT_SECRET');
+        break;
+      case 'OAUTH_REDIRECT_URL':
+        value = const String.fromEnvironment('OAUTH_REDIRECT_URL');
+        break;
+      case 'OAUTH_AUTHORIZATION_ENDPOINT':
+        value = const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
+        break;
+      case 'OAUTH_TOKEN_ENDPOINT':
+        value = const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
+        break;
+      case 'OAUTH_DISCOVERY_URL':
+        value = const String.fromEnvironment('OAUTH_DISCOVERY_URL');
+        break;
+    }
+
+    if (value.isNotEmpty) {
+      return value;
+    }
+    return dotenv.env[key];
+  }
+
   void _validateEnv() {
-    final clientId = dotenv.env['OAUTH_CLIENT_ID'];
-    final redirectUrl = dotenv.env['OAUTH_REDIRECT_URL'];
-    final discoveryUrl = dotenv.env['OAUTH_DISCOVERY_URL'];
+    final clientId = _getConfigValue('OAUTH_CLIENT_ID');
+    final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL');
+    final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL');
 
     if (clientId == null || clientId.isEmpty) {
-      throw Exception('OAUTH_CLIENT_ID is not defined in .env');
+      throw Exception('OAUTH_CLIENT_ID is not defined');
     }
     if (redirectUrl == null || redirectUrl.isEmpty) {
-      throw Exception('OAUTH_REDIRECT_URL is not defined in .env');
+      throw Exception('OAUTH_REDIRECT_URL is not defined');
     }
     if (discoveryUrl == null || discoveryUrl.isEmpty) {
-      throw Exception('OAUTH_DISCOVERY_URL is not defined in .env');
+      throw Exception('OAUTH_DISCOVERY_URL is not defined');
     }
   }
 
@@ -57,10 +87,10 @@ class AuthProvider extends ChangeNotifier {
 
       final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
-          dotenv.env['OAUTH_CLIENT_ID']!,
-          dotenv.env['OAUTH_REDIRECT_URL']!,
-          clientSecret: dotenv.env['OAUTH_CLIENT_SECRET'],
-          discoveryUrl: dotenv.env['OAUTH_DISCOVERY_URL'],
+          _getConfigValue('OAUTH_CLIENT_ID')!,
+          _getConfigValue('OAUTH_REDIRECT_URL')!,
+          clientSecret: _getConfigValue('OAUTH_CLIENT_SECRET'),
+          discoveryUrl: _getConfigValue('OAUTH_DISCOVERY_URL'),
           scopes: ['openid', 'profile', 'email', 'offline_access'],
           promptValues: ['login'],
         ),
@@ -113,10 +143,10 @@ class AuthProvider extends ChangeNotifier {
 
       final TokenResponse? result = await _appAuth.token(
         TokenRequest(
-          dotenv.env['OAUTH_CLIENT_ID']!,
-          dotenv.env['OAUTH_REDIRECT_URL']!,
-          clientSecret: dotenv.env['OAUTH_CLIENT_SECRET'],
-          discoveryUrl: dotenv.env['OAUTH_DISCOVERY_URL'],
+          _getConfigValue('OAUTH_CLIENT_ID')!,
+          _getConfigValue('OAUTH_REDIRECT_URL')!,
+          clientSecret: _getConfigValue('OAUTH_CLIENT_SECRET'),
+          discoveryUrl: _getConfigValue('OAUTH_DISCOVERY_URL'),
           refreshToken: _refreshToken,
           scopes: ['openid', 'profile', 'email', 'offline_access'],
         ),
