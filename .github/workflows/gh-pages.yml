@@ -1,0 +1,66 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build Web
+        run: >
+          flutter build web --base-href "/innovation/"
+          --dart-define=OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }}
+          --dart-define=OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
+          --dart-define=OAUTH_REDIRECT_URL=${{ secrets.OAUTH_REDIRECT_URL }}
+          --dart-define=OAUTH_AUTHORIZATION_ENDPOINT=${{ secrets.OAUTH_AUTHORIZATION_ENDPOINT }}
+          --dart-define=OAUTH_TOKEN_ENDPOINT=${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+          --dart-define=OAUTH_DISCOVERY_URL=${{ secrets.OAUTH_DISCOVERY_URL }}
+
+      - name: Disable Jekyll
+        run: touch build/web/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
