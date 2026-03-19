@@ -15,10 +15,10 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    environment:
+      name: github-pages
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,18 +58,6 @@ jobs:
         with:
           path: build/web
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
