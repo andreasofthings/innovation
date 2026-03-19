@@ -35,7 +35,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String? _getConfigValue(String key) {
-    // Priority: dart-define (literal required for web) > dotenv
     String value = '';
     switch (key) {
       case 'OAUTH_CLIENT_ID':
@@ -80,6 +79,13 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login() async {
     try {
       _validateEnv();
+
+      if (kIsWeb) {
+        // Fallback for web until a proper JS interop is in place
+        // flutter_appauth does not support web.
+        debugPrint('Web login requested but not fully implemented.');
+        throw Exception('Login on Web is not currently supported through this plugin. Please use a native device.');
+      }
 
       final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
@@ -137,6 +143,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       _validateEnv();
 
+      if (kIsWeb) {
+        throw Exception('Token refresh on Web is not supported.');
+      }
+
       final TokenResponse? result = await _appAuth.token(
         TokenRequest(
           _getConfigValue('OAUTH_CLIENT_ID')!,
@@ -161,7 +171,6 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Refresh token error: $e');
-      // If refresh fails, we might want to log the user out
       await logout();
     }
   }
