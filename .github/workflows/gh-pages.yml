@@ -17,10 +17,14 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -46,6 +50,9 @@ jobs:
       - name: Disable Jekyll
         run: touch build/web/.nojekyll
 
+      - name: Support client-side routing
+        run: cp build/web/index.html build/web/404.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -54,6 +61,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       pages: write
       id-token: write
