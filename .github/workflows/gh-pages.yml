@@ -7,12 +7,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,6 +39,9 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Build Web
         run: >
           flutter build web --base-href "/innovation/"
@@ -38,21 +52,16 @@ jobs:
           --dart-define=OAUTH_TOKEN_ENDPOINT=${{ secrets.OAUTH_TOKEN_ENDPOINT }}
           --dart-define=OAUTH_DISCOVERY_URL=${{ secrets.OAUTH_DISCOVERY_URL }}
 
-      - name: Disable Jekyll
-        run: touch build/web/.nojekyll
+      - name: Create 404.html and .nojekyll
+        run: |
+          cp build/web/index.html build/web/404.html
+          touch build/web/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
