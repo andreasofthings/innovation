@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Run tests
+        run: flutter test
+
       - name: Build Web
         run: >
           flutter build web --base-href "/innovation/"
@@ -35,8 +38,21 @@ jobs:
           --dart-define=OAUTH_TOKEN_ENDPOINT=${{ secrets.OAUTH_TOKEN_ENDPOINT }}
           --dart-define=OAUTH_DISCOVERY_URL=${{ secrets.OAUTH_DISCOVERY_URL }}
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Disable Jekyll
+        run: touch build/web/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
