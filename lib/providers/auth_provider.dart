@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -35,30 +36,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String? _getConfigValue(String key) {
-    // Priority: dart-define (literal required for web) > dotenv
-    String value = '';
-    switch (key) {
-      case 'OAUTH_CLIENT_ID':
-        value = const String.fromEnvironment('OAUTH_CLIENT_ID');
-        break;
-      case 'OAUTH_CLIENT_SECRET':
-        value = const String.fromEnvironment('OAUTH_CLIENT_SECRET');
-        break;
-      case 'OAUTH_REDIRECT_URL':
-        value = const String.fromEnvironment('OAUTH_REDIRECT_URL');
-        break;
-      case 'OAUTH_AUTHORIZATION_ENDPOINT':
-        value = const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
-        break;
-      case 'OAUTH_TOKEN_ENDPOINT':
-        value = const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
-        break;
-      case 'OAUTH_DISCOVERY_URL':
-        value = const String.fromEnvironment('OAUTH_DISCOVERY_URL');
-        break;
-    }
-
-    return value.isNotEmpty ? value : null;
+    return dotenv.env[key];
   }
 
   void _validateEnv() {
@@ -81,7 +59,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _validateEnv();
 
-      final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
+      final AuthorizationTokenResponse result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           _getConfigValue('OAUTH_CLIENT_ID')!,
           _getConfigValue('OAUTH_REDIRECT_URL')!,
@@ -92,9 +70,7 @@ class AuthProvider extends ChangeNotifier {
         ),
       );
 
-      if (result != null) {
-        await _processAuthTokenResponse(result);
-      }
+      await _processAuthTokenResponse(result);
     } catch (e) {
       debugPrint('Login error: $e');
       rethrow;
@@ -137,7 +113,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _validateEnv();
 
-      final TokenResponse? result = await _appAuth.token(
+      final TokenResponse result = await _appAuth.token(
         TokenRequest(
           _getConfigValue('OAUTH_CLIENT_ID')!,
           _getConfigValue('OAUTH_REDIRECT_URL')!,
@@ -148,7 +124,6 @@ class AuthProvider extends ChangeNotifier {
         ),
       );
 
-      if (result != null) {
         _accessToken = result.accessToken;
         _idToken = result.idToken;
         _refreshToken = result.refreshToken;
@@ -158,7 +133,6 @@ class AuthProvider extends ChangeNotifier {
         await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
 
         notifyListeners();
-      }
     } catch (e) {
       debugPrint('Refresh token error: $e');
       // If refresh fails, we might want to log the user out

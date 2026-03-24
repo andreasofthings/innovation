@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authenticating...</title>
+</head>
+<body>
+    <script>
+        // Check if we're in a popup or a redirect
+        if (window.opener) {
+            // Popup
+            window.opener.postMessage(window.location.href, window.location.origin);
+            window.close();
+        } else {
+            // Redirect
+            window.location.href = window.location.origin + window.location.pathname.replace('login-callback.html', 'index.html') + window.location.search;
+        }
+    </script>
+</body>
+</html>
