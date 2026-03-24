@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -36,7 +35,19 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String? _getConfigValue(String key) {
-    return dotenv.env[key];
+    if (key == 'OAUTH_CLIENT_ID' && const bool.hasEnvironment('OAUTH_CLIENT_ID')) {
+      return const String.fromEnvironment('OAUTH_CLIENT_ID');
+    }
+    if (key == 'OAUTH_REDIRECT_URL' && const bool.hasEnvironment('OAUTH_REDIRECT_URL')) {
+      return const String.fromEnvironment('OAUTH_REDIRECT_URL');
+    }
+    if (key == 'OAUTH_DISCOVERY_URL' && const bool.hasEnvironment('OAUTH_DISCOVERY_URL')) {
+      return const String.fromEnvironment('OAUTH_DISCOVERY_URL');
+    }
+    if (key == 'OAUTH_CLIENT_SECRET' && const bool.hasEnvironment('OAUTH_CLIENT_SECRET')) {
+      return const String.fromEnvironment('OAUTH_CLIENT_SECRET');
+    }
+    return null;
   }
 
   void _validateEnv() {
