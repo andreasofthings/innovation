@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:openid_client/openid_client_io.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final FlutterAppAuth _appAuth = const FlutterAppAuth();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool _isAuthenticated = false;
@@ -70,35 +70,42 @@ class AuthProvider extends ChangeNotifier {
     try {
       _validateEnv();
 
-      final AuthorizationTokenResponse result = await _appAuth.authorizeAndExchangeCode(
-        AuthorizationTokenRequest(
-          _getConfigValue('OAUTH_CLIENT_ID')!,
-          _getConfigValue('OAUTH_REDIRECT_URL')!,
-          clientSecret: _getConfigValue('OAUTH_CLIENT_SECRET'),
-          discoveryUrl: _getConfigValue('OAUTH_DISCOVERY_URL'),
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
-          promptValues: ['login'],
-        ),
+      var issuer = await Issuer.discover(Uri.parse(_getConfigValue('OAUTH_DISCOVERY_URL')!));
+      var client = Client(issuer, _getConfigValue('OAUTH_CLIENT_ID')!);
+
+      final redirectUri = Uri.parse(_getConfigValue('OAUTH_REDIRECT_URL')!);
+
+      // Authenticator spins up a local web server to catch the redirect (Best for macOS/Desktop)
+      var authenticator = Authenticator(
+        client,
+        scopes: ['openid', 'profile', 'email', 'offline_access'],
+        port: redirectUri.port > 0 ? redirectUri.port : 4000,
+        urlLancher: (String url) async {
+          if (await canLaunchUrl(Uri.parse(url))) {
+            await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+          } else {
+            throw 'Could not launch $url';
+          }
+        },
       );
 
-      await _processAuthTokenResponse(result);
+      var credential = await authenticator.authorize();
+      var tokenResponse = await credential.getTokenResponse();
+
+      _accessToken = tokenResponse.accessToken;
+      _idToken = tokenResponse.idToken.toCompactSerialization();
+      _refreshToken = tokenResponse.refreshToken;
+
+      await _secureStorage.write(key: 'access_token', value: _accessToken);
+      await _secureStorage.write(key: 'id_token', value: _idToken);
+      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+
+      _isAuthenticated = true;
+      notifyListeners();
     } catch (e) {
       debugPrint('Login error: $e');
       rethrow;
     }
-  }
-
-  Future<void> _processAuthTokenResponse(AuthorizationTokenResponse response) async {
-    _accessToken = response.accessToken;
-    _idToken = response.idToken;
-    _refreshToken = response.refreshToken;
-
-    await _secureStorage.write(key: 'access_token', value: _accessToken);
-    await _secureStorage.write(key: 'id_token', value: _idToken);
-    await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
-
-    _isAuthenticated = true;
-    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -124,29 +131,26 @@ class AuthProvider extends ChangeNotifier {
     try {
       _validateEnv();
 
-      final TokenResponse result = await _appAuth.token(
-        TokenRequest(
-          _getConfigValue('OAUTH_CLIENT_ID')!,
-          _getConfigValue('OAUTH_REDIRECT_URL')!,
-          clientSecret: _getConfigValue('OAUTH_CLIENT_SECRET'),
-          discoveryUrl: _getConfigValue('OAUTH_DISCOVERY_URL'),
-          refreshToken: _refreshToken,
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
-        ),
+      var issuer = await Issuer.discover(Uri.parse(_getConfigValue('OAUTH_DISCOVERY_URL')!));
+      var client = Client(issuer, _getConfigValue('OAUTH_CLIENT_ID')!);
+
+      var credential = client.createCredential(
+        refreshToken: _refreshToken,
       );
 
-        _accessToken = result.accessToken;
-        _idToken = result.idToken;
-        _refreshToken = result.refreshToken;
+      var tokenResponse = await credential.getTokenResponse(true);
 
-        await _secureStorage.write(key: 'access_token', value: _accessToken);
-        await _secureStorage.write(key: 'id_token', value: _idToken);
-        await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      _accessToken = tokenResponse.accessToken;
+      _idToken = tokenResponse.idToken.toCompactSerialization();
+      _refreshToken = tokenResponse.refreshToken;
 
-        notifyListeners();
+      await _secureStorage.write(key: 'access_token', value: _accessToken);
+      await _secureStorage.write(key: 'id_token', value: _idToken);
+      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+
+      notifyListeners();
     } catch (e) {
       debugPrint('Refresh token error: $e');
-      // If refresh fails, we might want to log the user out
       await logout();
     }
   }
