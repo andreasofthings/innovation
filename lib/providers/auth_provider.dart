@@ -1,19 +1,19 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:openid_client/openid_client_io.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:url_launcher/url_launcher.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool _isAuthenticated = false;
-  String? _accessToken;
-  String? _idToken;
-  String? _refreshToken;
+  oauth2.Client? _client;
 
   bool get isAuthenticated => _isAuthenticated;
-  String? get accessToken => _accessToken;
+  String? get accessToken => _client?.credentials.accessToken;
 
   AuthProvider() {
     _loadTokens();
@@ -21,11 +21,14 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _loadTokens() async {
     try {
-      _accessToken = await _secureStorage.read(key: 'access_token');
-      _idToken = await _secureStorage.read(key: 'id_token');
-      _refreshToken = await _secureStorage.read(key: 'refresh_token');
-
-      if (_accessToken != null) {
+      final credentialsJson = await _secureStorage.read(key: 'oauth_credentials');
+      if (credentialsJson != null) {
+        final credentials = oauth2.Credentials.fromJson(credentialsJson);
+        _client = oauth2.Client(
+          credentials,
+          identifier: _getConfigValue('OAUTH_CLIENT_ID') ?? '',
+          secret: _getConfigValue('OAUTH_CLIENT_SECRET'),
+        );
         _isAuthenticated = true;
         notifyListeners();
       }
@@ -41,64 +44,61 @@ class AuthProvider extends ChangeNotifier {
     if (key == 'OAUTH_REDIRECT_URL' && const bool.hasEnvironment('OAUTH_REDIRECT_URL')) {
       return const String.fromEnvironment('OAUTH_REDIRECT_URL');
     }
-    if (key == 'OAUTH_DISCOVERY_URL' && const bool.hasEnvironment('OAUTH_DISCOVERY_URL')) {
-      return const String.fromEnvironment('OAUTH_DISCOVERY_URL');
+    if (key == 'OAUTH_AUTHORIZATION_ENDPOINT' && const bool.hasEnvironment('OAUTH_AUTHORIZATION_ENDPOINT')) {
+      return const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
+    }
+    if (key == 'OAUTH_TOKEN_ENDPOINT' && const bool.hasEnvironment('OAUTH_TOKEN_ENDPOINT')) {
+      return const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
     }
     if (key == 'OAUTH_CLIENT_SECRET' && const bool.hasEnvironment('OAUTH_CLIENT_SECRET')) {
       return const String.fromEnvironment('OAUTH_CLIENT_SECRET');
     }
-    return null;
+    // Fallback to dotenv
+    return dotenv.env[key];
   }
 
   void _validateEnv() {
     final clientId = _getConfigValue('OAUTH_CLIENT_ID');
     final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL');
-    final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL');
+    final authEndpoint = _getConfigValue('OAUTH_AUTHORIZATION_ENDPOINT');
+    final tokenEndpoint = _getConfigValue('OAUTH_TOKEN_ENDPOINT');
 
-    if (clientId == null || clientId.isEmpty) {
-      throw Exception('OAUTH_CLIENT_ID is not defined');
-    }
-    if (redirectUrl == null || redirectUrl.isEmpty) {
-      throw Exception('OAUTH_REDIRECT_URL is not defined');
-    }
-    if (discoveryUrl == null || discoveryUrl.isEmpty) {
-      throw Exception('OAUTH_DISCOVERY_URL is not defined');
-    }
+    if (clientId == null || clientId.isEmpty) throw Exception('OAUTH_CLIENT_ID is not defined');
+    if (redirectUrl == null || redirectUrl.isEmpty) throw Exception('OAUTH_REDIRECT_URL is not defined');
+    if (authEndpoint == null || authEndpoint.isEmpty) throw Exception('OAUTH_AUTHORIZATION_ENDPOINT is not defined');
+    if (tokenEndpoint == null || tokenEndpoint.isEmpty) throw Exception('OAUTH_TOKEN_ENDPOINT is not defined');
   }
 
   Future<void> login() async {
     try {
       _validateEnv();
 
-      var issuer = await Issuer.discover(Uri.parse(_getConfigValue('OAUTH_DISCOVERY_URL')!));
-      var client = Client(issuer, _getConfigValue('OAUTH_CLIENT_ID')!);
+      final identifier = _getConfigValue('OAUTH_CLIENT_ID')!;
+      final secret = _getConfigValue('OAUTH_CLIENT_SECRET');
+      final authorizationEndpoint = Uri.parse(_getConfigValue('OAUTH_AUTHORIZATION_ENDPOINT')!);
+      final tokenEndpoint = Uri.parse(_getConfigValue('OAUTH_TOKEN_ENDPOINT')!);
+      final redirectUrl = Uri.parse('http://${_getConfigValue('OAUTH_REDIRECT_URL')!}');
 
-      final redirectUri = Uri.parse(_getConfigValue('OAUTH_REDIRECT_URL')!);
-
-      // Authenticator spins up a local web server to catch the redirect (Best for macOS/Desktop)
-      var authenticator = Authenticator(
-        client,
-        scopes: ['openid', 'profile', 'email', 'offline_access'],
-        port: redirectUri.port > 0 ? redirectUri.port : 4000,
-        urlLancher: (String url) async {
-          if (await canLaunchUrl(Uri.parse(url))) {
-            await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-          } else {
-            throw 'Could not launch $url';
-          }
-        },
+      var grant = oauth2.AuthorizationCodeGrant(
+        identifier,
+        authorizationEndpoint,
+        tokenEndpoint,
+        secret: secret,
       );
 
-      var credential = await authenticator.authorize();
-      var tokenResponse = await credential.getTokenResponse();
+      var authorizationUrl = grant.getAuthorizationUrl(
+        redirectUrl,
+        scopes: ['openid', 'profile', 'email', 'offline_access'],
+      );
 
-      _accessToken = tokenResponse.accessToken;
-      _idToken = tokenResponse.idToken.toCompactSerialization();
-      _refreshToken = tokenResponse.refreshToken;
+      await _redirect(authorizationUrl);
 
-      await _secureStorage.write(key: 'access_token', value: _accessToken);
-      await _secureStorage.write(key: 'id_token', value: _idToken);
-      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      var responseUrl = await _listenForRedirect(redirectUrl);
+
+      _client = await grant.handleAuthorizationResponse(responseUrl.queryParameters);
+
+      final credentialsJson = _client!.credentials.toJson();
+      await _secureStorage.write(key: 'oauth_credentials', value: credentialsJson);
 
       _isAuthenticated = true;
       notifyListeners();
@@ -108,16 +108,35 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _redirect(Uri authorizationUrl) async {
+    if (await canLaunchUrl(authorizationUrl)) {
+      await launchUrl(authorizationUrl, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch $authorizationUrl';
+    }
+  }
+
+  Future<Uri> _listenForRedirect(Uri redirectUrl) async {
+    var server = await HttpServer.bind(redirectUrl.host, redirectUrl.port);
+    var request = await server.first;
+    var responseUrl = request.uri;
+
+    request.response
+      ..statusCode = 200
+      ..headers.set('Content-Type', 'text/html; charset=utf-8')
+      ..write('<html><body><h1>Authentication Successful</h1><p>You can close this window and return to the app.</p></body></html>')
+      ..close();
+    
+    await server.close();
+    return responseUrl;
+  }
+
   Future<void> logout() async {
-    _accessToken = null;
-    _idToken = null;
-    _refreshToken = null;
+    _client = null;
     _isAuthenticated = false;
 
     try {
-      await _secureStorage.delete(key: 'access_token');
-      await _secureStorage.delete(key: 'id_token');
-      await _secureStorage.delete(key: 'refresh_token');
+      await _secureStorage.delete(key: 'oauth_credentials');
     } catch (e) {
       debugPrint('Error clearing tokens during logout: $e');
     }
@@ -126,27 +145,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    if (_refreshToken == null) return;
+    if (_client == null || _client!.credentials.refreshToken == null) return;
 
     try {
       _validateEnv();
+      _client = await _client!.refreshCredentials();
 
-      var issuer = await Issuer.discover(Uri.parse(_getConfigValue('OAUTH_DISCOVERY_URL')!));
-      var client = Client(issuer, _getConfigValue('OAUTH_CLIENT_ID')!);
-
-      var credential = client.createCredential(
-        refreshToken: _refreshToken,
-      );
-
-      var tokenResponse = await credential.getTokenResponse(true);
-
-      _accessToken = tokenResponse.accessToken;
-      _idToken = tokenResponse.idToken.toCompactSerialization();
-      _refreshToken = tokenResponse.refreshToken;
-
-      await _secureStorage.write(key: 'access_token', value: _accessToken);
-      await _secureStorage.write(key: 'id_token', value: _idToken);
-      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      final credentialsJson = _client!.credentials.toJson();
+      await _secureStorage.write(key: 'oauth_credentials', value: credentialsJson);
 
       notifyListeners();
     } catch (e) {

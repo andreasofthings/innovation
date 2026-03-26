@@ -5,11 +5,12 @@ import 'providers/auth_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'colorscheme.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized before any async work
   WidgetsFlutterBinding.ensureInitialized();
-
+  await dotenv.load(fileName: ".env");
 
   runApp(
     ChangeNotifierProvider(
@@ -30,10 +31,8 @@ class Innovation extends StatelessWidget {
     return MaterialApp(
       title: 'Innovation Coach',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: schema(),
-        useMaterial3: true,
-      ),
+      theme: appTheme(),
+      darkTheme: appDarkTheme(),
       // Automatically toggle between Login and Home based on auth state
       home: isAuthenticated
           ? const HomePage(title: 'Innovation Coach')
