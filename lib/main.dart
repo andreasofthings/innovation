@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/user_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/profile_screen.dart';
 import 'colorscheme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -13,8 +15,14 @@ void main() async {
   await dotenv.load(fileName: ".env");
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AuthProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
+          create: (context) => UserProvider(null),
+          update: (context, auth, previous) => UserProvider(auth.client),
+        ),
+      ],
       child: const Innovation(),
     ),
   );
@@ -37,6 +45,9 @@ class Innovation extends StatelessWidget {
       home: isAuthenticated
           ? const HomePage(title: 'Innovation Coach')
           : const LoginScreen(),
+      routes: {
+        '/profile': (context) => const ProfileScreen(),
+      },
     );
   }
 }
