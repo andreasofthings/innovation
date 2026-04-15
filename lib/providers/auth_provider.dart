@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -53,8 +52,7 @@ class AuthProvider extends ChangeNotifier {
     if (key == 'OAUTH_CLIENT_SECRET' && const bool.hasEnvironment('OAUTH_CLIENT_SECRET')) {
       return const String.fromEnvironment('OAUTH_CLIENT_SECRET');
     }
-    // Fallback to dotenv
-    return dotenv.env[key];
+    return null;
   }
 
   void _validateEnv() {
