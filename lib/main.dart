@@ -20,7 +20,13 @@ void main() async {
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
           create: (context) => UserProvider(null),
-          update: (context, auth, previous) => UserProvider(auth.accessToken),
+          update: (context, auth, previous) {
+            if (previous != null) {
+              previous.updateToken(auth.accessToken);
+              return previous;
+            }
+            return UserProvider(auth.accessToken);
+          },
         ),
       ],
       child: const Innovation(),

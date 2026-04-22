@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../providers/user_provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/user_profile.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -31,37 +32,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      final userProvider = context.watch<UserProvider>();
+      final userProvider = Provider.of<UserProvider>(context);
       final profile = userProvider.profile;
       if (profile != null) {
-        _language = profile.language;
-        _confidence = profile.confidence;
-        _defaultWorkshopLength = profile.defaultWorkshopLength;
-        _defaultWorkshopSetting = profile.defaultWorkshopSetting;
-        _defaultGroupSize = profile.defaultGroupSize;
-        _isGoogleConnected = profile.isGoogleConnected;
-        _color = Color(int.parse(profile.color.replaceFirst('#', '0xFF')));
-        _icon = profile.icon;
-        _dateOfBirth = profile.dateOfBirth;
-        _country = profile.country;
-        _isInitialized = true;
+        _initializeFromProfile(profile);
+      } else if (!userProvider.isLoading) {
+        // Initialize with defaults if profile is not available and not loading
+        _initializeDefaults();
       }
     }
+  }
+
+  void _initializeFromProfile(UserProfile profile) {
+    _language = profile.language;
+    _confidence = profile.confidence;
+    _defaultWorkshopLength = profile.defaultWorkshopLength;
+    _defaultWorkshopSetting = profile.defaultWorkshopSetting;
+    _defaultGroupSize = profile.defaultGroupSize;
+    _isGoogleConnected = profile.isGoogleConnected;
+    _color = Color(int.parse(profile.color.replaceFirst('#', '0xFF')));
+    _icon = profile.icon;
+    _dateOfBirth = profile.dateOfBirth;
+    _country = profile.country;
+    _isInitialized = true;
+  }
+
+  void _initializeDefaults() {
+    _language = 'en';
+    _confidence = 0.5;
+    _defaultWorkshopLength = 60;
+    _defaultWorkshopSetting = 'on-site';
+    _defaultGroupSize = 10;
+    _isGoogleConnected = false;
+    _color = const Color(0xFF25AFF4);
+    _icon = 'person';
+    _dateOfBirth = null;
+    _country = '';
+    _isInitialized = true;
   }
 
   @override
   Widget build(BuildContext context) {
     final userProvider = context.watch<UserProvider>();
+    final hasError = userProvider.hasError;
+    final isEnabled = !hasError && !userProvider.isLoading;
+
     if (userProvider.isLoading && !_isInitialized) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (userProvider.profile == null) {
-      return const Scaffold(
-        body: Center(child: Text('Profile not available')),
-      );
+    // Show snackbar on error
+    if (hasError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile not available. Using offline settings.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
     }
 
     return Scaffold(
@@ -70,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: _saveProfile,
+            onPressed: isEnabled ? _saveProfile : null,
           ),
         ],
       ),
@@ -89,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   DropdownMenuItem(value: 'en', child: Text('English')),
                   DropdownMenuItem(value: 'de', child: Text('German')),
                 ],
-                onChanged: (value) => setState(() => _language = value!),
+                onChanged: isEnabled ? (value) => setState(() => _language = value!) : null,
               ),
               const SizedBox(height: 16),
               Text('Confidence: ${(_confidence * 100).toInt()}%'),
@@ -99,13 +130,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 max: 1,
                 divisions: 10,
                 label: '${(_confidence * 100).toInt()}%',
-                onChanged: (value) => setState(() => _confidence = value),
+                onChanged: isEnabled ? (value) => setState(() => _confidence = value) : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 initialValue: _defaultWorkshopLength.toString(),
                 decoration: const InputDecoration(labelText: 'Default Length for Workshops (min)'),
                 keyboardType: TextInputType.number,
+                enabled: isEnabled,
                 onChanged: (value) => _defaultWorkshopLength = int.tryParse(value) ?? 60,
               ),
               const SizedBox(height: 16),
@@ -117,13 +149,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   DropdownMenuItem(value: 'on-site', child: Text('On-site')),
                   DropdownMenuItem(value: 'hybrid', child: Text('Hybrid')),
                 ],
-                onChanged: (value) => setState(() => _defaultWorkshopSetting = value!),
+                onChanged: isEnabled ? (value) => setState(() => _defaultWorkshopSetting = value!) : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 initialValue: _defaultGroupSize.toString(),
                 decoration: const InputDecoration(labelText: 'Default Group Size'),
                 keyboardType: TextInputType.number,
+                enabled: isEnabled,
                 onChanged: (value) => _defaultGroupSize = int.tryParse(value) ?? 10,
               ),
               const SizedBox(height: 24),
@@ -131,6 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               TextFormField(
                 initialValue: _country,
                 decoration: const InputDecoration(labelText: 'Country'),
+                enabled: isEnabled,
                 onChanged: (value) => _country = value,
               ),
               const SizedBox(height: 16),
@@ -138,18 +172,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: const Text('Date of Birth'),
                 subtitle: Text(_dateOfBirth == null ? 'Not set' : DateFormat('yyyy-MM-dd').format(_dateOfBirth!)),
                 trailing: const Icon(Icons.calendar_today),
-                onTap: _pickDateOfBirth,
+                enabled: isEnabled,
+                onTap: isEnabled ? _pickDateOfBirth : null,
               ),
               const SizedBox(height: 24),
               _buildSectionTitle('Apperance'),
               ListTile(
                 title: const Text('Theme Color'),
                 trailing: CircleAvatar(backgroundColor: _color),
-                onTap: _pickColor,
+                enabled: isEnabled,
+                onTap: isEnabled ? _pickColor : null,
               ),
               TextFormField(
                 initialValue: _icon,
                 decoration: const InputDecoration(labelText: 'Icon Name'),
+                enabled: isEnabled,
                 onChanged: (value) => _icon = value,
               ),
               const SizedBox(height: 24),
@@ -158,13 +195,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: const Text('Connection to Google'),
                 subtitle: const Text('For calendar configuration'),
                 value: _isGoogleConnected,
-                onChanged: (value) {
+                onChanged: isEnabled ? (value) {
                   setState(() => _isGoogleConnected = value);
                   if (value) {
                     _connectToGoogle();
                   }
-                },
+                } : null,
               ),
+              const SizedBox(height: 32),
+              Center(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.read<AuthProvider>().logout(),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Logout'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(color: Theme.of(context).colorScheme.error),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -177,7 +228,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
