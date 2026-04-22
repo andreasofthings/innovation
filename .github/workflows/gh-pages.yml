@@ -44,7 +44,7 @@ jobs:
 
       - name: Build Web
         run: >
-          flutter build web --base-href "/innovation/"
+          flutter build web --base-href "/"
           --dart-define=OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }}
           --dart-define=OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
           --dart-define=OAUTH_REDIRECT_URL=${{ secrets.OAUTH_REDIRECT_URL }}
