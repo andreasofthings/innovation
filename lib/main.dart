@@ -9,7 +9,6 @@ import 'screens/profile_screen.dart';
 import 'colorscheme.dart';
 
 void main() async {
-  // Ensure Flutter bindings are initialized before any async work
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
@@ -18,7 +17,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
           create: (context) => UserProvider(null),
-          update: (context, auth, previous) => UserProvider(auth.client),
+          update: (context, auth, previous) => UserProvider(auth.accessToken),
         ),
       ],
       child: const Innovation(),
@@ -31,19 +30,21 @@ class Innovation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the authentication state from the AuthProvider
-    final isAuthenticated = context.watch<AuthProvider>().isAuthenticated;
-
     return MaterialApp(
       title: 'Innovation Coach',
       debugShowCheckedModeBanner: false,
       theme: appTheme(),
       darkTheme: appDarkTheme(),
-      // Automatically toggle between Login and Home based on auth state
-      home: isAuthenticated
-          ? const HomePage(title: 'Innovation Coach')
-          : const LoginScreen(),
+      builder: (context, child) {
+        final isAuthenticated = context.watch<AuthProvider>().isAuthenticated;
+        if (!isAuthenticated) {
+          return const LoginScreen();
+        }
+        return child!;
+      },
+      initialRoute: '/',
       routes: {
+        '/': (context) => const HomePage(title: 'Innovation Coach'),
         '/profile': (context) => const ProfileScreen(),
       },
     );

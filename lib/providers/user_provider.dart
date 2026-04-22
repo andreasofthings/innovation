@@ -1,16 +1,14 @@
 import 'package:flutter/foundation.dart';
-import 'package:oauth2/oauth2.dart' as oauth2;
+import 'package:http/http.dart' as http;
 import '../models/user_profile.dart';
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class UserProvider extends ChangeNotifier {
-  final oauth2.Client? _client;
+  final String? _accessToken;
   UserProfile? _profile;
   bool _isLoading = false;
 
-  UserProvider(this._client) {
-    if (_client != null) {
+  UserProvider(this._accessToken) {
+    if (_accessToken != null) {
       fetchProfile();
     }
   }
@@ -19,24 +17,31 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   String get _baseUrl {
-    final tokenEndpoint = dotenv.env['OAUTH_TOKEN_ENDPOINT'] ?? 'https://pramari.de/oauth2/token';
+    // Fallback to a default if environment variable is not set
+    const tokenEndpoint = String.fromEnvironment('OAUTH_TOKEN_ENDPOINT', defaultValue: 'https://id.pramari.de/application/o/innovation/');
     final uri = Uri.parse(tokenEndpoint);
+    // Authentik usually has profile at /application/o/userinfo/ or similar,
+    // but based on previous code it was /api/profile.
+    // Let's assume the user knows their API structure.
     return '${uri.scheme}://${uri.host}/api/profile';
   }
 
   Future<void> fetchProfile() async {
-    if (_client == null) return;
+    if (_accessToken == null) return;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      final response = await _client!.get(Uri.parse(_baseUrl));
+      final response = await http.get(
+        Uri.parse(_baseUrl),
+        headers: {'Authorization': 'Bearer $_accessToken'},
+      );
+
       if (response.statusCode == 200) {
         _profile = UserProfile.fromJson(response.body);
       } else {
         debugPrint('Failed to fetch profile: ${response.statusCode}');
-        // Fallback or initial profile if not found
         _profile = UserProfile(
           language: 'en',
           confidence: 0.5,
@@ -58,16 +63,19 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> updateProfile(UserProfile profile) async {
-    if (_client == null) return false;
+    if (_accessToken == null) return false;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      final response = await _client!.patch(
+      final response = await http.patch(
         Uri.parse(_baseUrl),
         body: profile.toJson(),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_accessToken',
+        },
       );
 
       if (response.statusCode == 200) {
