@@ -8,6 +8,7 @@ import 'package:innovation/screens/profile_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:innovation/providers/auth_provider.dart';
 import 'package:innovation/providers/user_provider.dart';
+import 'package:innovation/providers/method_provider.dart';
 
 void main() {
   testWidgets('HomePage navigation test', (WidgetTester tester) async {
@@ -18,6 +19,7 @@ void main() {
         providers: [
           ChangeNotifierProvider.value(value: authProvider),
           ChangeNotifierProvider(create: (context) => UserProvider(null)),
+          ChangeNotifierProvider(create: (context) => MethodProvider()),
         ],
         child: const MaterialApp(
           home: HomePage(title: 'Innovation Coach'),
@@ -44,8 +46,6 @@ void main() {
     expect(find.byType(FavoritesScreen), findsOneWidget);
 
     // Navigate to Profile
-    // ProfileScreen might show a loading indicator or 'Profile not available'
-    // because UserProvider doesn't have a profile yet and no access token.
     await tester.tap(find.text('PROFILE'));
     await tester.pumpAndSettle();
     expect(find.byType(ProfileScreen), findsOneWidget);
