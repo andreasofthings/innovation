@@ -26,7 +26,7 @@ void main() {
     );
 
     // Verify initial state (Home tab)
-    expect(find.text('Ready to Innovate?'), findsOneWidget);
+    expect(find.text('Home Screen'), findsOneWidget);
 
     // Navigate to Library
     await tester.tap(find.text('LIBRARY'));
