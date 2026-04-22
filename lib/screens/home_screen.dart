@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(width: 8),
             Text(
-              'INNOVATION PLANNER',
+              'Innovation Coach',
               style: TextStyle(
                 color: colorScheme.primary,
                 fontWeight: FontWeight.w900,
@@ -135,7 +135,7 @@ class HomeContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Select a section from the navigation below to start planning your next workshop.',
+                  'Start planning your next Innovation here.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
