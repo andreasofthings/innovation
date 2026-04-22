@@ -3,9 +3,10 @@ import 'package:http/http.dart' as http;
 import '../models/user_profile.dart';
 
 class UserProvider extends ChangeNotifier {
-  final String? _accessToken;
+  String? _accessToken;
   UserProfile? _profile;
   bool _isLoading = false;
+  bool _hasError = false;
 
   UserProvider(this._accessToken) {
     if (_accessToken != null) {
@@ -15,21 +16,31 @@ class UserProvider extends ChangeNotifier {
 
   UserProfile? get profile => _profile;
   bool get isLoading => _isLoading;
+  bool get hasError => _hasError;
 
   String get _baseUrl {
-    // Fallback to a default if environment variable is not set
     const tokenEndpoint = String.fromEnvironment('OAUTH_TOKEN_ENDPOINT', defaultValue: 'https://id.pramari.de/application/o/innovation/');
     final uri = Uri.parse(tokenEndpoint);
-    // Authentik usually has profile at /application/o/userinfo/ or similar,
-    // but based on previous code it was /api/profile.
-    // Let's assume the user knows their API structure.
     return '${uri.scheme}://${uri.host}/api/profile';
+  }
+
+  Future<void> updateToken(String? newToken) async {
+    if (_accessToken == newToken) return;
+    _accessToken = newToken;
+    if (_accessToken != null) {
+      await fetchProfile();
+    } else {
+      _profile = null;
+      _hasError = false;
+      notifyListeners();
+    }
   }
 
   Future<void> fetchProfile() async {
     if (_accessToken == null) return;
 
     _isLoading = true;
+    _hasError = false;
     notifyListeners();
 
     try {
@@ -40,26 +51,35 @@ class UserProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         _profile = UserProfile.fromJson(response.body);
+        _hasError = false;
       } else {
         debugPrint('Failed to fetch profile: ${response.statusCode}');
-        _profile = UserProfile(
-          language: 'en',
-          confidence: 0.5,
-          defaultWorkshopLength: 60,
-          defaultWorkshopSetting: 'on-site',
-          defaultGroupSize: 10,
-          isGoogleConnected: false,
-          color: '#25AFF4',
-          icon: 'person',
-          country: '',
-        );
+        _hasError = true;
+        // Keep existing profile if any, or use a default one for UI display
+        _profile ??= _getDefaultProfile();
       }
     } catch (e) {
       debugPrint('Error fetching profile: $e');
+      _hasError = true;
+      _profile ??= _getDefaultProfile();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  UserProfile _getDefaultProfile() {
+    return UserProfile(
+      language: 'en',
+      confidence: 0.5,
+      defaultWorkshopLength: 60,
+      defaultWorkshopSetting: 'on-site',
+      defaultGroupSize: 10,
+      isGoogleConnected: false,
+      color: '#25AFF4',
+      icon: 'person',
+      country: '',
+    );
   }
 
   Future<bool> updateProfile(UserProfile profile) async {
@@ -80,6 +100,8 @@ class UserProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         _profile = profile;
+        _hasError = false;
+        notifyListeners();
         return true;
       } else {
         debugPrint('Failed to update profile: ${response.statusCode}');
