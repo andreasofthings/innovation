@@ -13,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
 
   bool get isAuthenticated => _isAuthenticated;
   String? get accessToken => _client?.credentials.accessToken;
+  oauth2.Client? get client => _client;
 
   AuthProvider() {
     _loadTokens();
