@@ -6,6 +6,9 @@ import 'providers/user_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/library_screen.dart';
+import 'screens/workshop_screen.dart';
+import 'screens/favorites_screen.dart';
 import 'colorscheme.dart';
 
 void main() async {
@@ -46,6 +49,9 @@ class Innovation extends StatelessWidget {
       routes: {
         '/': (context) => const HomePage(title: 'Innovation Coach'),
         '/profile': (context) => const ProfileScreen(),
+        '/library': (context) => const LibraryScreen(),
+        '/workshop': (context) => const WorkshopScreen(),
+        '/favorites': (context) => const FavoritesScreen(),
       },
     );
   }
