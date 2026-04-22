@@ -1,11 +1,18 @@
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:app_links/app_links.dart';
+import 'package:http/http.dart' as http;
 
 class AuthProvider extends ChangeNotifier {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
+  final _appLinks = AppLinks();
 
   bool _isAuthenticated = false;
   String? _accessToken;
@@ -17,7 +24,14 @@ class AuthProvider extends ChangeNotifier {
   String? get idToken => _idToken;
 
   AuthProvider() {
-    _loadTokens();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _loadTokens();
+    if (kIsWeb) {
+      _handleIncomingLinks();
+    }
   }
 
   Future<void> _loadTokens() async {
@@ -35,14 +49,47 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  void _handleIncomingLinks() {
+    _appLinks.uriLinkStream.listen((uri) {
+      _processCallbackUri(uri);
+    });
+
+    // Check initial link
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) {
+        _processCallbackUri(uri);
+      }
+    });
+  }
+
+  Future<void> _processCallbackUri(Uri uri) async {
+    final code = uri.queryParameters['code'];
+    if (code != null) {
+      debugPrint('Received code from redirect: $code');
+      await _exchangeCodeForTokens(code);
+    }
+  }
+
+  String _generateRandomString(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~';
+    final random = Random.secure();
+    return List.generate(length, (index) => chars[random.nextInt(chars.length)]).join();
+  }
+
+  String _generateCodeChallenge(String verifier) {
+    var bytes = utf8.encode(verifier);
+    var digest = sha256.convert(bytes);
+    return base64Url.encode(digest.bytes).replaceAll('=', '');
+  }
+
   String? _getConfigValue(String key) {
     switch (key) {
       case 'OAUTH_CLIENT_ID':
         return const String.fromEnvironment('OAUTH_CLIENT_ID');
       case 'OAUTH_REDIRECT_URL':
-        return const String.fromEnvironment('OAUTH_REDIRECT_URL', defaultValue: 'https://innovation.pramari.de/');
+        return 'https://innovation.pramari.de/login-callback.html';
       case 'OAUTH_DISCOVERY_URL':
-        return const String.fromEnvironment('OAUTH_DISCOVERY_URL', defaultValue: 'https://id.pramari.de/application/o/innovation/.well-known/openid-configuration');
+        return 'https://id.pramari.de/application/o/innovation/.well-known/openid-configuration';
       default:
         return null;
     }
@@ -63,7 +110,41 @@ class AuthProvider extends ChangeNotifier {
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
 
-      debugPrint('Starting login with clientId: $clientId, redirectUrl: $redirectUrl');
+      if (kIsWeb) {
+        debugPrint('Starting web login redirect to $discoveryUrl');
+
+        // 1. Fetch discovery doc
+        final response = await http.get(Uri.parse(discoveryUrl));
+        if (response.statusCode != 200) throw Exception('Failed to load discovery document');
+        final discovery = jsonDecode(response.body);
+        final authEndpoint = discovery['authorization_endpoint'];
+
+        // 2. Prepare PKCE
+        final verifier = _generateRandomString(64);
+        await _secureStorage.write(key: 'code_verifier', value: verifier);
+        final challenge = _generateCodeChallenge(verifier);
+
+        // 3. Construct Auth URL
+        final authUri = Uri.parse(authEndpoint).replace(queryParameters: {
+          'client_id': clientId,
+          'redirect_uri': redirectUrl,
+          'response_type': 'code',
+          'scope': 'openid profile email offline_access',
+          'code_challenge': challenge,
+          'code_challenge_method': 'S256',
+        });
+
+        // 4. Redirect
+        if (await canLaunchUrl(authUri)) {
+          await launchUrl(authUri, webOnlyWindowName: '_self');
+        } else {
+          throw Exception('Could not launch $authUri');
+        }
+        return;
+      }
+
+      // Native platform logic
+      debugPrint('Starting native login with clientId: $clientId, redirectUrl: $redirectUrl');
 
       final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
@@ -75,20 +156,60 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (result != null) {
-        _accessToken = result.accessToken;
-        _idToken = result.idToken;
-        _refreshToken = result.refreshToken;
-
-        await _secureStorage.write(key: 'access_token', value: _accessToken);
-        await _secureStorage.write(key: 'id_token', value: _idToken);
-        await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
-
-        _isAuthenticated = true;
-        notifyListeners();
+        await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
       }
     } catch (e) {
       debugPrint('Login error: $e');
       rethrow;
+    }
+  }
+
+  Future<void> _exchangeCodeForTokens(String code) async {
+    try {
+      final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
+      final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
+      final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
+      final verifier = await _secureStorage.read(key: 'code_verifier');
+
+      final response = await http.get(Uri.parse(discoveryUrl));
+      final discovery = jsonDecode(response.body);
+      final tokenEndpoint = discovery['token_endpoint'];
+
+      final tokenResponse = await http.post(
+        Uri.parse(tokenEndpoint),
+        body: {
+          'grant_type': 'authorization_code',
+          'code': code,
+          'redirect_uri': redirectUrl,
+          'client_id': clientId,
+          'code_verifier': verifier,
+        },
+      );
+
+      if (tokenResponse.statusCode == 200) {
+        final data = jsonDecode(tokenResponse.body);
+        await _saveTokens(data['access_token'], data['id_token'], data['refresh_token']);
+        await _secureStorage.delete(key: 'code_verifier');
+      } else {
+        debugPrint('Token exchange failed: ${tokenResponse.body}');
+      }
+    } catch (e) {
+      debugPrint('Error exchanging code: $e');
+    }
+  }
+
+  Future<void> _saveTokens(String? access, String? id, String? refresh) async {
+    _accessToken = access;
+    _idToken = id;
+    _refreshToken = refresh;
+
+    if (_accessToken != null) {
+      await _secureStorage.write(key: 'access_token', value: _accessToken);
+      if (_idToken != null) await _secureStorage.write(key: 'id_token', value: _idToken);
+      if (_refreshToken != null) await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+
+      _isAuthenticated = true;
+      notifyListeners();
     }
   }
 
@@ -118,6 +239,29 @@ class AuthProvider extends ChangeNotifier {
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
 
+      if (kIsWeb) {
+        final response = await http.get(Uri.parse(discoveryUrl));
+        final discovery = jsonDecode(response.body);
+        final tokenEndpoint = discovery['token_endpoint'];
+
+        final refreshResponse = await http.post(
+          Uri.parse(tokenEndpoint),
+          body: {
+            'grant_type': 'refresh_token',
+            'client_id': clientId,
+            'refresh_token': _refreshToken,
+          },
+        );
+
+        if (refreshResponse.statusCode == 200) {
+          final data = jsonDecode(refreshResponse.body);
+          await _saveTokens(data['access_token'], data['id_token'], data['refresh_token']);
+        } else {
+          await logout();
+        }
+        return;
+      }
+
       final TokenResponse? result = await _appAuth.token(
         TokenRequest(
           clientId,
@@ -129,15 +273,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (result != null) {
-        _accessToken = result.accessToken;
-        _idToken = result.idToken;
-        _refreshToken = result.refreshToken;
-
-        await _secureStorage.write(key: 'access_token', value: _accessToken);
-        await _secureStorage.write(key: 'id_token', value: _idToken);
-        await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
-
-        notifyListeners();
+        await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
       }
     } catch (e) {
       debugPrint('Refresh token error: $e');
