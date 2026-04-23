@@ -31,7 +31,8 @@ class Method {
     // Wagtail might return fields as HTML strings, we might need to strip them later
     // but for now we keep them as is or use a simple regex if they are consistently <p>...
 
-    String stripHtml(String htmlString) {
+    String stripHtml(dynamic value) {
+      final String htmlString = value?.toString() ?? '';
       return htmlString.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ').trim();
     }
 
@@ -40,16 +41,16 @@ class Method {
 
     return Method(
       id: json['id'],
-      title: json['title'] ?? '',
-      date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
-      benefit: stripHtml(json['benefit'] ?? ''),
-      methodInput: stripHtml(json['method_input'] ?? ''),
-      methodOutput: stripHtml(json['method_output'] ?? ''),
-      why: stripHtml(json['why'] ?? ''),
-      how: stripHtml(json['how'] ?? ''),
+      title: json['title']?.toString() ?? '',
+      date: json['date'] != null ? DateTime.tryParse(json['date'].toString()) : null,
+      benefit: stripHtml(json['benefit']),
+      methodInput: stripHtml(json['method_input']),
+      methodOutput: stripHtml(json['method_output']),
+      why: stripHtml(json['why']),
+      how: stripHtml(json['how']),
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      methodType: json['method_type'] ?? 'Unknown',
-      parentTitle: parent?['title'],
+      methodType: json['method_type']?.toString() ?? 'Unknown',
+      parentTitle: parent?['title']?.toString(),
     );
   }
 
