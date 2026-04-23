@@ -12,6 +12,10 @@ class Method {
   final List<String> tags;
   final String methodType;
   final String? parentTitle;
+  final int? minPeople;
+  final int? maxPeople;
+  final int? minTime;
+  final int? maxTime;
 
   Method({
     required this.id,
@@ -25,6 +29,10 @@ class Method {
     required this.tags,
     required this.methodType,
     this.parentTitle,
+    this.minPeople,
+    this.maxPeople,
+    this.minTime,
+    this.maxTime,
   });
 
   factory Method.fromJson(Map<String, dynamic> json) {
@@ -51,21 +59,44 @@ class Method {
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       methodType: json['method_type']?.toString() ?? 'Unknown',
       parentTitle: parent?['title']?.toString(),
+      minPeople: json['min_people'] as int?,
+      maxPeople: json['max_people'] as int?,
+      minTime: json['min_time'] as int?,
+      maxTime: json['max_time'] as int?,
     );
   }
 
   Color get accentColor {
     switch (methodType.toLowerCase()) {
-      case 'discovery':
-        return Colors.blue;
-      case 'definition':
-        return Colors.green;
-      case 'development':
-        return Colors.orange;
-      case 'delivery':
-        return Colors.purple;
+      case 'warmup':
+        return Colors.white;
+      case 'empathize':
+        return const Color(0xFFE1F5FE); // Lightest blue
+      case 'define':
+        return const Color(0xFFB3E5FC); // Lighter blue
+      case 'ideate':
+        return const Color(0xFF4FC3F7); // Light blue
+      case 'prototype':
+        return const Color(0xFF25AFF4); // Primary blue
       default:
         return const Color(0xFF25AFF4); // Default theme color
+    }
+  }
+
+  IconData get icon {
+    switch (methodType.toLowerCase()) {
+      case 'warmup':
+        return Icons.groups;
+      case 'empathize':
+        return Icons.help_outline;
+      case 'define':
+        return Icons.architecture;
+      case 'ideate':
+        return Icons.lightbulb_outline;
+      case 'prototype':
+        return Icons.directions_car;
+      default:
+        return Icons.help_outline;
     }
   }
 }
