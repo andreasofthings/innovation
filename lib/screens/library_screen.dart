@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/method_provider.dart';
-import '../widgets/method_card.dart';
+import '../widgets/method_square_card.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -220,16 +220,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   return const Center(child: Text('No methods found.'));
                 }
 
-                return ListView.builder(
-                  itemCount: provider.methods.length,
-                  itemBuilder: (context, index) {
-                    final method = provider.methods[index];
-                    return MethodCard(
-                      method: method,
-                      onTap: () {
-                        // TODO: Navigate to Method Detail Screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Selected: ${method.title}')),
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = constraints.maxWidth < 600 ? 2 : 4;
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1.0,
+                      ),
+                      itemCount: provider.methods.length,
+                      itemBuilder: (context, index) {
+                        final method = provider.methods[index];
+                        return MethodSquareCard(
+                          method: method,
+                          onTap: () {
+                            // TODO: Navigate to Method Detail Screen
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Selected: ${method.title}')),
+                            );
+                          },
                         );
                       },
                     );
