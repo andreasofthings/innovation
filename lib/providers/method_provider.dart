@@ -57,7 +57,7 @@ class MethodProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final fields = 'title,date,benefit,method_input,method_output,why,how,tags,method_type';
+      final fields = 'title,date,benefit,method_input,method_output,why,how,tags,method_type,min_people,max_people,min_time,max_time';
       final url = 'https://pramari.de/api/v2/pages/?type=pages.MethodPage&fields=$fields';
 
       final Map<String, String> headers = {};
