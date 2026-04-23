@@ -31,18 +31,18 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (context) => MethodProvider()),
       ],
-      child: const Innovation(),
+      child: const Coach(),
     ),
   );
 }
 
-class Innovation extends StatelessWidget {
-  const Innovation({super.key});
+class Coach extends StatelessWidget {
+  const Coach({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Innovation Coach',
+      title: 'Coach',
       debugShowCheckedModeBanner: false,
       theme: appTheme(),
       darkTheme: appDarkTheme(),
@@ -55,7 +55,7 @@ class Innovation extends StatelessWidget {
       },
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomePage(title: 'Innovation Coach'),
+        '/': (context) => const HomePage(title: 'Coach'),
         '/profile': (context) => const ProfileScreen(),
         '/library': (context) => const LibraryScreen(),
         '/workshop': (context) => const WorkshopScreen(),

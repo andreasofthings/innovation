@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innovation/screens/login_screen.dart';
+import 'package:coach/screens/login_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:innovation/providers/auth_provider.dart';
+import 'package:coach/providers/auth_provider.dart';
 
 void main() {
-  testWidgets('LoginScreen shows the Innovation Card and Login button', (WidgetTester tester) async {
+  testWidgets('LoginScreen shows the Coach Card and Login button', (WidgetTester tester) async {
     final authProvider = AuthProvider();
 
     await tester.pumpWidget(
@@ -20,12 +20,12 @@ void main() {
     );
 
     // Verify AppBar
-    expect(find.text('Innovation Coach'), findsOneWidget);
+    expect(find.text('Coach'), findsOneWidget);
 
     // Verify the card content
     expect(find.byIcon(Icons.lightbulb_outline), findsOneWidget);
     expect(find.text('Ready to Innovate?'), findsOneWidget);
-    expect(find.text('Start planning your next innovation here.'), findsOneWidget);
+    expect(find.text('Start planning your next coach here.'), findsOneWidget);
 
     // Verify the Login button
     expect(find.widgetWithText(ElevatedButton, 'Login'), findsOneWidget);

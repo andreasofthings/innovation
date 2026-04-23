@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innovation/screens/profile_screen.dart';
+import 'package:coach/screens/profile_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:innovation/providers/auth_provider.dart';
-import 'package:innovation/providers/user_provider.dart';
+import 'package:coach/providers/auth_provider.dart';
+import 'package:coach/providers/user_provider.dart';
 
 class MockUserProvider extends UserProvider {
   bool _mockHasError = false;

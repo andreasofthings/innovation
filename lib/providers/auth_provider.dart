@@ -87,9 +87,9 @@ class AuthProvider extends ChangeNotifier {
       case 'OAUTH_CLIENT_ID':
         return const String.fromEnvironment('OAUTH_CLIENT_ID');
       case 'OAUTH_REDIRECT_URL':
-        return 'https://innovation.pramari.de/login-callback.html';
+        return 'https://coach.pramari.de/login-callback.html';
       case 'OAUTH_DISCOVERY_URL':
-        return 'https://id.pramari.de/application/o/innovation/.well-known/openid-configuration';
+        return 'https://id.pramari.de/application/o/coach/.well-known/openid-configuration';
       default:
         return null;
     }

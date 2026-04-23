@@ -19,7 +19,7 @@ class UserProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   String get _baseUrl {
-    const tokenEndpoint = String.fromEnvironment('OAUTH_TOKEN_ENDPOINT', defaultValue: 'https://id.pramari.de/application/o/innovation/');
+    const tokenEndpoint = String.fromEnvironment('OAUTH_TOKEN_ENDPOINT', defaultValue: 'https://id.pramari.de/application/o/coach/');
     final uri = Uri.parse(tokenEndpoint);
     return '${uri.scheme}://${uri.host}/api/profile';
   }
