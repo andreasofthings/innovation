@@ -50,24 +50,41 @@ class MethodSquareCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    method.methodType.toUpperCase(),
-                    style: TextStyle(
-                      color: method.accentColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          method.methodType.toUpperCase(),
+                          style: TextStyle(
+                            color: method.accentColor == Colors.white
+                                ? Colors.grey
+                                : method.accentColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(
+                        method.icon,
+                        size: 16,
+                        color: method.accentColor == Colors.white
+                            ? Colors.grey
+                            : method.accentColor,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Expanded(
                     child: Text(
-                      method.title,
+                      method.benefit,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             height: 1.2,
                           ),
-                      maxLines: 3,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

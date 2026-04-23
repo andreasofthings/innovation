@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/method_provider.dart';
 import '../widgets/method_square_card.dart';
+import 'method_detail_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -103,23 +104,56 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text('Parent Page', style: TextStyle(fontWeight: FontWeight.bold)),
-                      DropdownButton<String>(
-                        isExpanded: true,
-                        value: provider.selectedParentTitle,
-                        hint: const Text('Select Parent Page'),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('All Parents'),
-                          ),
-                          ...provider.availableParentTitles.map((p) => DropdownMenuItem(
-                            value: p,
-                            child: Text(p),
-                          )),
-                        ],
-                        onChanged: (val) {
-                          provider.setParentFilter(val);
+                      const Text('Method Type', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Wrap(
+                        spacing: 8,
+                        children: provider.availableMethodTypes.map((type) {
+                          final isSelected = provider.selectedMethodTypes.contains(type);
+                          return FilterChip(
+                            label: Text(type),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              provider.toggleMethodType(type);
+                              setModalState(() {});
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('People Range', style: TextStyle(fontWeight: FontWeight.bold)),
+                      RangeSlider(
+                        values: RangeValues(
+                          provider.minPeopleFilter.toDouble(),
+                          provider.maxPeopleFilter.toDouble(),
+                        ),
+                        min: 0,
+                        max: 50,
+                        divisions: 50,
+                        labels: RangeLabels(
+                          provider.minPeopleFilter.toString(),
+                          provider.maxPeopleFilter.toString(),
+                        ),
+                        onChanged: (RangeValues values) {
+                          provider.setPeopleRange(values.start.round(), values.end.round());
+                          setModalState(() {});
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Time Range (min)', style: TextStyle(fontWeight: FontWeight.bold)),
+                      RangeSlider(
+                        values: RangeValues(
+                          provider.minTimeFilter.toDouble(),
+                          provider.maxTimeFilter.toDouble(),
+                        ),
+                        min: 0,
+                        max: 180,
+                        divisions: 36,
+                        labels: RangeLabels(
+                          provider.minTimeFilter.toString(),
+                          provider.maxTimeFilter.toString(),
+                        ),
+                        onChanged: (RangeValues values) {
+                          provider.setTimeRange(values.start.round(), values.end.round());
                           setModalState(() {});
                         },
                       ),
@@ -237,9 +271,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         return MethodSquareCard(
                           method: method,
                           onTap: () {
-                            // TODO: Navigate to Method Detail Screen
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Selected: ${method.title}')),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MethodDetailScreen(method: method),
+                              ),
                             );
                           },
                         );
