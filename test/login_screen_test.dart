@@ -30,4 +30,22 @@ void main() {
     // Verify the Login button
     expect(find.widgetWithText(ElevatedButton, 'Login'), findsOneWidget);
   });
+
+  testWidgets('LoginScreen shows footer text and link', (WidgetTester tester) async {
+    final authProvider = AuthProvider();
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: authProvider),
+        ],
+        child: const MaterialApp(
+          home: LoginScreen(),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('made with ❤️ in Munich by'), findsOneWidget);
+    expect(find.text('https://neumeier.org'), findsOneWidget);
+  });
 }

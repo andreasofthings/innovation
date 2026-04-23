@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -91,6 +92,31 @@ class LoginScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'made with ❤️ in Munich by ',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      launchUrl(Uri.parse('https://neumeier.org'));
+                    },
+                    child: Text(
+                      'https://neumeier.org',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
