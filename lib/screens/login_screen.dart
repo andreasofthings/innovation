@@ -13,7 +13,7 @@ class LoginScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Innovation Coach'),
+        title: const Text('Coach'),
         centerTitle: true,
         backgroundColor: isDark ? colorScheme.surface : const Color(0xFF000000),
         foregroundColor: colorScheme.primary,
@@ -58,7 +58,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Start planning your next innovation here.',
+                        'Start planning your next coach here.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,

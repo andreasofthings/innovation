@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innovation/screens/home_screen.dart';
-import 'package:innovation/screens/library_screen.dart';
-import 'package:innovation/screens/workshop_screen.dart';
-import 'package:innovation/screens/favorites_screen.dart';
-import 'package:innovation/screens/profile_screen.dart';
+import 'package:coach/screens/home_screen.dart';
+import 'package:coach/screens/library_screen.dart';
+import 'package:coach/screens/workshop_screen.dart';
+import 'package:coach/screens/favorites_screen.dart';
+import 'package:coach/screens/profile_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:innovation/providers/auth_provider.dart';
-import 'package:innovation/providers/user_provider.dart';
-import 'package:innovation/providers/method_provider.dart';
+import 'package:coach/providers/auth_provider.dart';
+import 'package:coach/providers/user_provider.dart';
+import 'package:coach/providers/method_provider.dart';
 
 void main() {
   testWidgets('HomePage navigation test', (WidgetTester tester) async {
@@ -22,7 +22,7 @@ void main() {
           ChangeNotifierProvider(create: (context) => MethodProvider()),
         ],
         child: const MaterialApp(
-          home: HomePage(title: 'Innovation Coach'),
+          home: HomePage(title: 'Coach'),
         ),
       ),
     );

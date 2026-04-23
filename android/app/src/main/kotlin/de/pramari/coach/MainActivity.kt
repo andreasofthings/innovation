@@ -1,4 +1,4 @@
-package com.example.innovation
+package de.pramari.coach
 
 import io.flutter.embedding.android.FlutterActivity
 

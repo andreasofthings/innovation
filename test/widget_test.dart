@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innovation/main.dart';
+import 'package:coach/main.dart';
 import 'package:provider/provider.dart';
-import 'package:innovation/providers/auth_provider.dart';
+import 'package:coach/providers/auth_provider.dart';
 
 void main() {
   testWidgets('Login screen smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    // We need to provide the AuthProvider for the Innovation widget to work.
+    // We need to provide the AuthProvider for the Coach widget to work.
     await tester.pumpWidget(
       ChangeNotifierProvider(
         create: (context) => AuthProvider(),
-        child: const Innovation(),
+        child: const Coach(),
       ),
     );
 

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innovation/models/method.dart';
+import 'package:coach/models/method.dart';
 import 'package:flutter/material.dart';
 
 void main() {

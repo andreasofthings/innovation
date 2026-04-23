@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Innovation Coach',
+              'Coach',
               style: TextStyle(
                 color: colorScheme.primary,
                 fontWeight: FontWeight.w900,
