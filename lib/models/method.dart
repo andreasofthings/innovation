@@ -12,6 +12,10 @@ class Method {
   final List<String> tags;
   final String methodType;
   final String? parentTitle;
+  final int? minPeople;
+  final int? maxPeople;
+  final int? minTime;
+  final int? maxTime;
 
   Method({
     required this.id,
@@ -25,6 +29,10 @@ class Method {
     required this.tags,
     required this.methodType,
     this.parentTitle,
+    this.minPeople,
+    this.maxPeople,
+    this.minTime,
+    this.maxTime,
   });
 
   factory Method.fromJson(Map<String, dynamic> json) {
@@ -51,6 +59,10 @@ class Method {
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       methodType: json['method_type']?.toString() ?? 'Unknown',
       parentTitle: parent?['title']?.toString(),
+      minPeople: json['min_people'] as int?,
+      maxPeople: json['max_people'] as int?,
+      minTime: json['min_time'] as int?,
+      maxTime: json['max_time'] as int?,
     );
   }
 
@@ -64,6 +76,8 @@ class Method {
         return Colors.orange;
       case 'delivery':
         return Colors.purple;
+      case 'warmup':
+        return Colors.pink;
       default:
         return const Color(0xFF25AFF4); // Default theme color
     }

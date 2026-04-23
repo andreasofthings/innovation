@@ -11,6 +11,15 @@ class MethodSquareCard extends StatelessWidget {
     this.onTap,
   });
 
+  String _formatRange(int? min, int? max, String unit) {
+    if (min == null && max == null) return 'N/A';
+    if (min != null && max != null) {
+      if (min == max) return '$min $unit';
+      return '$min-$max $unit';
+    }
+    return '${min ?? max} $unit';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -58,9 +67,31 @@ class MethodSquareCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             height: 1.2,
                           ),
-                      maxLines: 4,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.people_outline, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatRange(method.minPeople, method.maxPeople, 'ppl'),
+                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatRange(method.minTime, method.maxTime, 'min'),
+                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ],
               ),
