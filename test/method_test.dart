@@ -15,7 +15,7 @@ void main() {
         "why": "Why",
         "how": "How",
         "tags": ["tag1", "tag2"],
-        "method_type": "Discovery",
+        "method_type": "warmup",
         "meta": {
           "parent": {"title": "Parent Category"}
         }
@@ -28,40 +28,53 @@ void main() {
       expect(method.benefit, "Good benefit");
       expect(method.tags, contains("tag1"));
       expect(method.parentTitle, "Parent Category");
-      expect(method.methodType, "Discovery");
-      expect(method.accentColor, Colors.blue);
+      expect(method.methodType, "warmup");
+      expect(method.accentColor, Colors.white);
+      expect(method.icon, Icons.groups);
     });
 
-    test('Method.accentColor returns correct colors for types', () {
-      final methodDiscovery = Method(
+    test('Method.accentColor and icon return correct values for types', () {
+      final warmup = Method(
         id: 1, title: 'T', benefit: 'B', methodInput: 'I', methodOutput: 'O',
-        why: 'W', how: 'H', tags: [], methodType: 'Discovery'
+        why: 'W', how: 'H', tags: [], methodType: 'warmup'
       );
-      expect(methodDiscovery.accentColor, Colors.blue);
+      expect(warmup.accentColor, Colors.white);
+      expect(warmup.icon, Icons.groups);
 
-      final methodDefinition = Method(
+      final empathize = Method(
         id: 2, title: 'T', benefit: 'B', methodInput: 'I', methodOutput: 'O',
-        why: 'W', how: 'H', tags: [], methodType: 'Definition'
+        why: 'W', how: 'H', tags: [], methodType: 'empathize'
       );
-      expect(methodDefinition.accentColor, Colors.green);
+      expect(empathize.accentColor, const Color(0xFFE1F5FE));
+      expect(empathize.icon, Icons.help_outline);
 
-      final methodDevelopment = Method(
+      final define = Method(
         id: 3, title: 'T', benefit: 'B', methodInput: 'I', methodOutput: 'O',
-        why: 'W', how: 'H', tags: [], methodType: 'Development'
+        why: 'W', how: 'H', tags: [], methodType: 'define'
       );
-      expect(methodDevelopment.accentColor, Colors.orange);
+      expect(define.accentColor, const Color(0xFFB3E5FC));
+      expect(define.icon, Icons.architecture);
 
-      final methodDelivery = Method(
+      final ideate = Method(
         id: 4, title: 'T', benefit: 'B', methodInput: 'I', methodOutput: 'O',
-        why: 'W', how: 'H', tags: [], methodType: 'Delivery'
+        why: 'W', how: 'H', tags: [], methodType: 'ideate'
       );
-      expect(methodDelivery.accentColor, Colors.purple);
+      expect(ideate.accentColor, const Color(0xFF4FC3F7));
+      expect(ideate.icon, Icons.lightbulb_outline);
 
-      final methodUnknown = Method(
+      final prototype = Method(
         id: 5, title: 'T', benefit: 'B', methodInput: 'I', methodOutput: 'O',
+        why: 'W', how: 'H', tags: [], methodType: 'prototype'
+      );
+      expect(prototype.accentColor, const Color(0xFF25AFF4));
+      expect(prototype.icon, Icons.directions_car);
+
+      final unknown = Method(
+        id: 6, title: 'T', benefit: 'B', methodInput: 'I', methodOutput: 'O',
         why: 'W', how: 'H', tags: [], methodType: 'Unknown'
       );
-      expect(methodUnknown.accentColor, const Color(0xFF25AFF4));
+      expect(unknown.accentColor, const Color(0xFF25AFF4));
+      expect(unknown.icon, Icons.help_outline);
     });
   });
 }

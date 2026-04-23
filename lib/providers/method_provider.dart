@@ -18,7 +18,11 @@ class MethodProvider extends ChangeNotifier {
 
   String _searchQuery = '';
   Set<String> _selectedTags = {};
-  String? _selectedParentTitle;
+  Set<String> _selectedMethodTypes = {};
+  int _minPeopleFilter = 0;
+  int _maxPeopleFilter = 50;
+  int _minTimeFilter = 0;
+  int _maxTimeFilter = 180;
   MethodSort _currentSort = MethodSort.alphabeticalAsc;
 
   MethodProvider() {
@@ -30,7 +34,11 @@ class MethodProvider extends ChangeNotifier {
   bool get hasError => _hasError;
   String get searchQuery => _searchQuery;
   Set<String> get selectedTags => _selectedTags;
-  String? get selectedParentTitle => _selectedParentTitle;
+  Set<String> get selectedMethodTypes => _selectedMethodTypes;
+  int get minPeopleFilter => _minPeopleFilter;
+  int get maxPeopleFilter => _maxPeopleFilter;
+  int get minTimeFilter => _minTimeFilter;
+  int get maxTimeFilter => _maxTimeFilter;
   MethodSort get currentSort => _currentSort;
 
   List<String> get availableTags {
@@ -39,14 +47,10 @@ class MethodProvider extends ChangeNotifier {
     return tags;
   }
 
-  List<String> get availableParentTitles {
-    final parents = _allMethods
-        .map((m) => m.parentTitle)
-        .whereType<String>()
-        .toSet()
-        .toList();
-    parents.sort();
-    return parents;
+  List<String> get availableMethodTypes {
+    final types = _allMethods.map((m) => m.methodType).toSet().toList();
+    types.sort();
+    return types;
   }
 
   String get _cmsToken => const String.fromEnvironment('PRAMARI_CMS_TOKEN');
@@ -103,8 +107,24 @@ class MethodProvider extends ChangeNotifier {
     _applyFiltersAndSort();
   }
 
-  void setParentFilter(String? parentTitle) {
-    _selectedParentTitle = parentTitle;
+  void toggleMethodType(String type) {
+    if (_selectedMethodTypes.contains(type)) {
+      _selectedMethodTypes.remove(type);
+    } else {
+      _selectedMethodTypes.add(type);
+    }
+    _applyFiltersAndSort();
+  }
+
+  void setPeopleRange(int min, int max) {
+    _minPeopleFilter = min;
+    _maxPeopleFilter = max;
+    _applyFiltersAndSort();
+  }
+
+  void setTimeRange(int min, int max) {
+    _minTimeFilter = min;
+    _maxTimeFilter = max;
     _applyFiltersAndSort();
   }
 
@@ -116,7 +136,11 @@ class MethodProvider extends ChangeNotifier {
   void clearFilters() {
     _searchQuery = '';
     _selectedTags = {};
-    _selectedParentTitle = null;
+    _selectedMethodTypes = {};
+    _minPeopleFilter = 0;
+    _maxPeopleFilter = 50;
+    _minTimeFilter = 0;
+    _maxTimeFilter = 180;
     _applyFiltersAndSort();
   }
 
@@ -128,10 +152,27 @@ class MethodProvider extends ChangeNotifier {
       final matchesTags = _selectedTags.isEmpty ||
           _selectedTags.every((tag) => method.tags.contains(tag));
 
-      final matchesParent = _selectedParentTitle == null ||
-          method.parentTitle == _selectedParentTitle;
+      final matchesType = _selectedMethodTypes.isEmpty ||
+          _selectedMethodTypes.contains(method.methodType);
 
-      return matchesSearch && matchesTags && matchesParent;
+      // People filter: overlapping ranges
+      // If method has no min/max, we assume it's always included?
+      // Or if it has min/max, it must overlap with the filter range.
+      bool matchesPeople = true;
+      if (method.minPeople != null || method.maxPeople != null) {
+        final mMin = method.minPeople ?? 0;
+        final mMax = method.maxPeople ?? 999;
+        matchesPeople = !(mMax < _minPeopleFilter || mMin > _maxPeopleFilter);
+      }
+
+      bool matchesTime = true;
+      if (method.minTime != null || method.maxTime != null) {
+        final mMin = method.minTime ?? 0;
+        final mMax = method.maxTime ?? 999;
+        matchesTime = !(mMax < _minTimeFilter || mMin > _maxTimeFilter);
+      }
+
+      return matchesSearch && matchesTags && matchesType && matchesPeople && matchesTime;
     }).toList();
 
     switch (_currentSort) {
