@@ -182,7 +182,7 @@ class AuthProvider extends ChangeNotifier {
           'code': code,
           'redirect_uri': redirectUrl,
           'client_id': clientId,
-          'code_verifier': verifier,
+          'code_verifier': verifier ?? '',
         },
       );
 
