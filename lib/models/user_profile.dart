@@ -13,6 +13,7 @@ class UserProfile {
   final String country;
   final String name;
   final String email;
+  final List<int> favorites;
 
   UserProfile({
     required this.language,
@@ -27,6 +28,7 @@ class UserProfile {
     required this.country,
     required this.name,
     required this.email,
+    this.favorites = const [],
   });
 
   UserProfile copyWith({
@@ -42,6 +44,7 @@ class UserProfile {
     String? country,
     String? name,
     String? email,
+    List<int>? favorites,
   }) {
     return UserProfile(
       language: language ?? this.language,
@@ -56,6 +59,7 @@ class UserProfile {
       country: country ?? this.country,
       name: name ?? this.name,
       email: email ?? this.email,
+      favorites: favorites ?? this.favorites,
     );
   }
 
@@ -73,6 +77,7 @@ class UserProfile {
       'icon': icon,
       'date_of_birth': dateOfBirth?.toIso8601String().split('T')[0],
       'country': country,
+      'favorites': favorites,
     };
   }
 
@@ -90,6 +95,7 @@ class UserProfile {
       country: map['country'] ?? '',
       name: map['name'] ?? 'User',
       email: map['email'] ?? '',
+      favorites: (map['favorites'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
     );
   }
 
