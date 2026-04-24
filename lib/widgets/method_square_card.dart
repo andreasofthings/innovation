@@ -22,9 +22,6 @@ class MethodSquareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isWarmup = method.methodType.toLowerCase() == 'warmup';
-    final Color accentColor = isWarmup ? const Color(0xFF25AFF4) : method.accentColor;
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -42,7 +39,7 @@ class MethodSquareCard extends StatelessWidget {
           children: [
             Container(
               height: 6,
-              color: accentColor,
+              color: method.accentColor,
             ),
             Expanded(
               child: Padding(
@@ -57,7 +54,7 @@ class MethodSquareCard extends StatelessWidget {
                           child: Text(
                             method.methodType.toUpperCase(),
                             style: TextStyle(
-                              color: accentColor,
+                              color: method.accentColor,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
@@ -68,7 +65,7 @@ class MethodSquareCard extends StatelessWidget {
                         Icon(
                           method.icon,
                           size: 16,
-                          color: accentColor,
+                          color: method.accentColor,
                         ),
                       ],
                     ),

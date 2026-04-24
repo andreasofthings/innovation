@@ -69,15 +69,15 @@ class Method {
   Color get accentColor {
     switch (methodType.toLowerCase()) {
       case 'warmup':
-        return Colors.white;
+        return Colors.amber;
       case 'empathize':
-        return const Color(0xFFE1F5FE); // Lightest blue
+        return Colors.orange;
       case 'define':
-        return const Color(0xFFB3E5FC); // Lighter blue
+        return Colors.redAccent;
       case 'ideate':
-        return const Color(0xFF4FC3F7); // Light blue
+        return Colors.green;
       case 'prototype':
-        return const Color(0xFF25AFF4); // Primary blue
+        return const Color(0xFF25AFF4);
       default:
         return const Color(0xFF25AFF4); // Default theme color
     }
