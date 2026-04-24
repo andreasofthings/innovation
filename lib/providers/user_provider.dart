@@ -19,7 +19,7 @@ class UserProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   String get _baseUrl {
-    return 'https://id.pramari.de/api/v3/core/users';
+    return 'https://pramari.de/api/v2/profile';
   }
 
   Future<void> updateToken(String? newToken) async {
@@ -43,7 +43,7 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/me/'),
+        Uri.parse('$_baseUrl/'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',
@@ -85,8 +85,8 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> updateProfile(UserProfile profile) async {
-    if (_accessToken == null || profile.pk == null) {
-      debugPrint('Update failed: Missing access token or user PK');
+    if (_accessToken == null) {
+      debugPrint('Update failed: Missing access token');
       _profile = profile; // Update local anyway
       notifyListeners();
       return false;
@@ -94,7 +94,7 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final response = await http.patch(
-        Uri.parse('$_baseUrl/${profile.pk}/'),
+        Uri.parse('$_baseUrl/'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',

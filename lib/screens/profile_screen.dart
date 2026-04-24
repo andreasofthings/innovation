@@ -291,11 +291,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     final userProvider = context.read<UserProvider>();
-    final currentProfile = userProvider.profile;
 
     final colorHex = '#${_color.value.toRadixString(16).substring(2).toUpperCase()}';
     final updatedProfile = UserProfile(
-      pk: currentProfile?.pk,
       language: _language,
       confidence: _confidence,
       defaultWorkshopLength: _defaultWorkshopLength,
@@ -308,7 +306,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       country: _country,
       name: _name,
       email: _email,
-      rawAttributes: currentProfile?.rawAttributes ?? {},
     );
 
     final success = await userProvider.updateProfile(updatedProfile);
