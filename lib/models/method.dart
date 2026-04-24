@@ -36,9 +36,6 @@ class Method {
   });
 
   factory Method.fromJson(Map<String, dynamic> json) {
-    // Wagtail might return fields as HTML strings, we might need to strip them later
-    // but for now we keep them as is or use a simple regex if they are consistently <p>...
-
     String stripHtml(dynamic value) {
       final String htmlString = value?.toString() ?? '';
       return htmlString.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ').trim();
@@ -71,15 +68,15 @@ class Method {
       case 'warmup':
         return Colors.white;
       case 'empathize':
-        return const Color(0xFFE1F5FE); // Lightest blue
+        return const Color(0xFFE1F5FE);
       case 'define':
-        return const Color(0xFFB3E5FC); // Lighter blue
+        return const Color(0xFFB3E5FC);
       case 'ideate':
-        return const Color(0xFF4FC3F7); // Light blue
+        return const Color(0xFF4FC3F7);
       case 'prototype':
-        return const Color(0xFF25AFF4); // Primary blue
+        return const Color(0xFF25AFF4);
       default:
-        return const Color(0xFF25AFF4); // Default theme color
+        return const Color(0xFF25AFF4);
     }
   }
 
@@ -97,6 +94,23 @@ class Method {
         return Icons.directions_car;
       default:
         return Icons.help_outline;
+    }
+  }
+
+  Color get typeColor {
+    switch (methodType.toLowerCase()) {
+      case 'warmup':
+        return const Color(0xFFE3940A);
+      case 'empathize':
+        return const Color(0xFFF9A825);
+      case 'define':
+        return const Color(0xFFD32F2F);
+      case 'ideate':
+        return const Color(0xFF43A047);
+      case 'prototype':
+        return const Color(0xFF006590);
+      default:
+        return const Color(0xFF006590);
     }
   }
 }
