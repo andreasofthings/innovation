@@ -25,6 +25,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String _icon;
   DateTime? _dateOfBirth;
   late String _country;
+  late String _name;
+  late String _email;
 
   bool _isInitialized = false;
 
@@ -54,6 +56,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _icon = profile.icon;
     _dateOfBirth = profile.dateOfBirth;
     _country = profile.country;
+    _name = profile.name;
+    _email = profile.email;
     _isInitialized = true;
   }
 
@@ -68,6 +72,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _icon = 'person';
     _dateOfBirth = null;
     _country = '';
+    _name = 'User';
+    _email = '';
     _isInitialized = true;
   }
 
@@ -112,6 +118,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSectionTitle('Identity'),
+              Text('Name: $_name'),
+              const SizedBox(height: 8),
+              Text('Email: $_email'),
+              const SizedBox(height: 24),
               _buildSectionTitle('General Settings'),
               DropdownButtonFormField<String>(
                 value: _language,
@@ -176,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: isEnabled ? _pickDateOfBirth : null,
               ),
               const SizedBox(height: 24),
-              _buildSectionTitle('Apperance'),
+              _buildSectionTitle('Appearance'),
               ListTile(
                 title: const Text('Theme Color'),
                 trailing: CircleAvatar(backgroundColor: _color),
@@ -291,6 +302,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       icon: _icon,
       dateOfBirth: _dateOfBirth,
       country: _country,
+      name: _name,
+      email: _email,
     );
 
     final success = await context.read<UserProvider>().updateProfile(updatedProfile);
