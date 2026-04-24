@@ -19,7 +19,7 @@ class UserProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   String get _baseUrl {
-    return 'https://id.pramari.de/application/o/userinfo/';
+    return 'https://id.pramari.de/api/v3/core/users';
   }
 
   Future<void> updateToken(String? newToken) async {
@@ -43,15 +43,18 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse(_baseUrl),
-        headers: {'Authorization': 'Bearer $_accessToken'},
+        Uri.parse('$_baseUrl/me/'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (response.statusCode == 200) {
         _profile = UserProfile.fromJson(response.body);
         _hasError = false;
       } else {
-        debugPrint('Failed to fetch profile: ${response.statusCode}');
+        debugPrint('Failed to fetch profile: ${response.statusCode} ${response.body}');
         _hasError = true;
         _profile ??= _getDefaultProfile();
       }
@@ -82,11 +85,34 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> updateProfile(UserProfile profile) async {
-    // Note: Standard OIDC userinfo endpoint is usually read-only.
-    // If Authentik supports PATCHing the user via API, that would be a different endpoint.
-    // For now, we update local state if successful, but standard UserInfo doesn't support PATCH.
-    _profile = profile;
-    notifyListeners();
-    return true;
+    if (_accessToken == null || profile.pk == null) {
+      debugPrint('Update failed: Missing access token or user PK');
+      _profile = profile; // Update local anyway
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/${profile.pk}/'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: profile.toJson(),
+      );
+
+      if (response.statusCode == 200) {
+        _profile = UserProfile.fromJson(response.body);
+        notifyListeners();
+        return true;
+      } else {
+        debugPrint('Failed to update profile: ${response.statusCode} ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      return false;
+    }
   }
 }
