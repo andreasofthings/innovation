@@ -11,6 +11,8 @@ class UserProfile {
   final String icon;
   final DateTime? dateOfBirth;
   final String country;
+  final String name;
+  final String email;
 
   UserProfile({
     required this.language,
@@ -23,6 +25,8 @@ class UserProfile {
     required this.icon,
     this.dateOfBirth,
     required this.country,
+    required this.name,
+    required this.email,
   });
 
   UserProfile copyWith({
@@ -36,6 +40,8 @@ class UserProfile {
     String? icon,
     DateTime? dateOfBirth,
     String? country,
+    String? name,
+    String? email,
   }) {
     return UserProfile(
       language: language ?? this.language,
@@ -48,20 +54,24 @@ class UserProfile {
       icon: icon ?? this.icon,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       country: country ?? this.country,
+      name: name ?? this.name,
+      email: email ?? this.email,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'name': name,
+      'email': email,
       'language': language,
       'confidence': confidence,
-      'defaultWorkshopLength': defaultWorkshopLength,
-      'defaultWorkshopSetting': defaultWorkshopSetting,
-      'defaultGroupSize': defaultGroupSize,
-      'isGoogleConnected': isGoogleConnected,
+      'default_workshop_length': defaultWorkshopLength,
+      'default_workshop_setting': defaultWorkshopSetting,
+      'default_group_size': defaultGroupSize,
+      'is_google_connected': isGoogleConnected,
       'color': color,
       'icon': icon,
-      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'date_of_birth': dateOfBirth?.toIso8601String().split('T')[0],
       'country': country,
     };
   }
@@ -70,14 +80,16 @@ class UserProfile {
     return UserProfile(
       language: map['language'] ?? 'en',
       confidence: (map['confidence'] ?? 0.5).toDouble(),
-      defaultWorkshopLength: map['defaultWorkshopLength'] ?? 60,
-      defaultWorkshopSetting: map['defaultWorkshopSetting'] ?? 'on-site',
-      defaultGroupSize: map['defaultGroupSize'] ?? 10,
-      isGoogleConnected: map['isGoogleConnected'] ?? false,
+      defaultWorkshopLength: map['default_workshop_length'] ?? 60,
+      defaultWorkshopSetting: map['default_workshop_setting'] ?? 'on-site',
+      defaultGroupSize: map['default_group_size'] ?? 10,
+      isGoogleConnected: map['is_google_connected'] ?? false,
       color: map['color'] ?? '#25AFF4',
       icon: map['icon'] ?? 'person',
-      dateOfBirth: map['dateOfBirth'] != null ? DateTime.parse(map['dateOfBirth']) : null,
+      dateOfBirth: map['date_of_birth'] != null ? DateTime.tryParse(map['date_of_birth']) : null,
       country: map['country'] ?? '',
+      name: map['name'] ?? 'User',
+      email: map['email'] ?? '',
     );
   }
 

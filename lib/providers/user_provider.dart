@@ -19,9 +19,7 @@ class UserProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   String get _baseUrl {
-    const tokenEndpoint = String.fromEnvironment('OAUTH_TOKEN_ENDPOINT', defaultValue: 'https://id.pramari.de/application/o/coach/');
-    final uri = Uri.parse(tokenEndpoint);
-    return '${uri.scheme}://${uri.host}/api/profile';
+    return 'https://pramari.de/api/v2/profile';
   }
 
   Future<void> updateToken(String? newToken) async {
@@ -45,17 +43,19 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse(_baseUrl),
-        headers: {'Authorization': 'Bearer $_accessToken'},
+        Uri.parse('$_baseUrl/'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (response.statusCode == 200) {
         _profile = UserProfile.fromJson(response.body);
         _hasError = false;
       } else {
-        debugPrint('Failed to fetch profile: ${response.statusCode}');
+        debugPrint('Failed to fetch profile: ${response.statusCode} ${response.body}');
         _hasError = true;
-        // Keep existing profile if any, or use a default one for UI display
         _profile ??= _getDefaultProfile();
       }
     } catch (e) {
@@ -79,40 +79,40 @@ class UserProvider extends ChangeNotifier {
       color: '#25AFF4',
       icon: 'person',
       country: '',
+      name: 'User',
+      email: '',
     );
   }
 
   Future<bool> updateProfile(UserProfile profile) async {
-    if (_accessToken == null) return false;
-
-    _isLoading = true;
-    notifyListeners();
+    if (_accessToken == null) {
+      debugPrint('Update failed: Missing access token');
+      _profile = profile; // Update local anyway
+      notifyListeners();
+      return false;
+    }
 
     try {
       final response = await http.patch(
-        Uri.parse(_baseUrl),
-        body: profile.toJson(),
+        Uri.parse('$_baseUrl/'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
         },
+        body: profile.toJson(),
       );
 
       if (response.statusCode == 200) {
-        _profile = profile;
-        _hasError = false;
+        _profile = UserProfile.fromJson(response.body);
         notifyListeners();
         return true;
       } else {
-        debugPrint('Failed to update profile: ${response.statusCode}');
+        debugPrint('Failed to update profile: ${response.statusCode} ${response.body}');
         return false;
       }
     } catch (e) {
       debugPrint('Error updating profile: $e');
       return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 }
