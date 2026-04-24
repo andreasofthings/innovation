@@ -61,44 +61,35 @@ class UserProfile {
 
   Map<String, dynamic> toMap() {
     return {
-      'language': language,
-      'confidence': confidence,
-      'defaultWorkshopLength': defaultWorkshopLength,
-      'defaultWorkshopSetting': defaultWorkshopSetting,
-      'defaultGroupSize': defaultGroupSize,
-      'isGoogleConnected': isGoogleConnected,
-      'color': color,
-      'icon': icon,
-      'dateOfBirth': dateOfBirth?.toIso8601String(),
-      'country': country,
       'name': name,
       'email': email,
+      'language': language,
+      'confidence': confidence,
+      'default_workshop_length': defaultWorkshopLength,
+      'default_workshop_setting': defaultWorkshopSetting,
+      'default_group_size': defaultGroupSize,
+      'is_google_connected': isGoogleConnected,
+      'color': color,
+      'icon': icon,
+      'date_of_birth': dateOfBirth?.toIso8601String().split('T')[0],
+      'country': country,
     };
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
-    // Handling Authentik/OIDC standard claims and custom attributes
-    final String name = map['name'] ?? map['preferred_username'] ?? 'User';
-    final String email = map['email'] ?? '';
-
-    // Custom attributes in Authentik are often under 'attributes' key or flattened
-    final attributes = map['attributes'] ?? {};
-
     return UserProfile(
-      language: attributes['language'] ?? map['language'] ?? 'en',
-      confidence: (attributes['confidence'] ?? map['confidence'] ?? 0.5).toDouble(),
-      defaultWorkshopLength: attributes['defaultWorkshopLength'] ?? map['defaultWorkshopLength'] ?? 60,
-      defaultWorkshopSetting: attributes['defaultWorkshopSetting'] ?? map['defaultWorkshopSetting'] ?? 'on-site',
-      defaultGroupSize: attributes['defaultGroupSize'] ?? map['defaultGroupSize'] ?? 10,
-      isGoogleConnected: attributes['isGoogleConnected'] ?? map['isGoogleConnected'] ?? false,
-      color: attributes['color'] ?? map['color'] ?? '#25AFF4',
-      icon: attributes['icon'] ?? map['icon'] ?? 'person',
-      dateOfBirth: (attributes['dateOfBirth'] ?? map['dateOfBirth']) != null
-          ? DateTime.parse(attributes['dateOfBirth'] ?? map['dateOfBirth'])
-          : null,
-      country: attributes['country'] ?? map['country'] ?? '',
-      name: name,
-      email: email,
+      language: map['language'] ?? 'en',
+      confidence: (map['confidence'] ?? 0.5).toDouble(),
+      defaultWorkshopLength: map['default_workshop_length'] ?? 60,
+      defaultWorkshopSetting: map['default_workshop_setting'] ?? 'on-site',
+      defaultGroupSize: map['default_group_size'] ?? 10,
+      isGoogleConnected: map['is_google_connected'] ?? false,
+      color: map['color'] ?? '#25AFF4',
+      icon: map['icon'] ?? 'person',
+      dateOfBirth: map['date_of_birth'] != null ? DateTime.tryParse(map['date_of_birth']) : null,
+      country: map['country'] ?? '',
+      name: map['name'] ?? 'User',
+      email: map['email'] ?? '',
     );
   }
 

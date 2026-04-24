@@ -290,6 +290,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final userProvider = context.read<UserProvider>();
+
     final colorHex = '#${_color.value.toRadixString(16).substring(2).toUpperCase()}';
     final updatedProfile = UserProfile(
       language: _language,
@@ -306,7 +308,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       email: _email,
     );
 
-    final success = await context.read<UserProvider>().updateProfile(updatedProfile);
+    final success = await userProvider.updateProfile(updatedProfile);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(success ? 'Profile updated successfully' : 'Failed to update profile')),

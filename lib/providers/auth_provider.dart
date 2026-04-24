@@ -132,7 +132,7 @@ class AuthProvider extends ChangeNotifier {
           'client_id': clientId,
           'redirect_uri': redirectUrl,
           'response_type': 'code',
-          'scope': 'openid profile email offline_access',
+          'scope': 'openid profile email offline_access goauthentik.io/api',
           'code_challenge': challenge,
           'code_challenge_method': 'S256',
         };
@@ -171,7 +171,7 @@ class AuthProvider extends ChangeNotifier {
           clientId,
           redirectUrl,
           discoveryUrl: discoveryUrl,
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
+          scopes: ['openid', 'profile', 'email', 'offline_access', 'goauthentik.io/api'],
           additionalParameters: additionalParameters.isNotEmpty ? additionalParameters : null,
         ),
       );
@@ -289,7 +289,7 @@ class AuthProvider extends ChangeNotifier {
           redirectUrl,
           discoveryUrl: discoveryUrl,
           refreshToken: _refreshToken,
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
+          scopes: ['openid', 'profile', 'email', 'offline_access', 'goauthentik.io/api'],
         ),
       );
 
