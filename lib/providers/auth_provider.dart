@@ -102,13 +102,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> login() async {
+  Future<void> login({String? flow, String? idpHint}) async {
     try {
       _validateEnv();
 
       final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
+
+      final effectiveFlow = flow ?? 'coach-login';
+      final effectiveIdpHint = idpHint;
 
       if (kIsWeb) {
         debugPrint('Starting web login redirect to $discoveryUrl');
@@ -125,14 +128,23 @@ class AuthProvider extends ChangeNotifier {
         final challenge = _generateCodeChallenge(verifier);
 
         // 3. Construct Auth URL
-        final authUri = Uri.parse(authEndpoint).replace(queryParameters: {
+        final Map<String, String> queryParams = {
           'client_id': clientId,
           'redirect_uri': redirectUrl,
           'response_type': 'code',
           'scope': 'openid profile email offline_access',
           'code_challenge': challenge,
           'code_challenge_method': 'S256',
-        });
+        };
+
+        if (effectiveFlow != null && effectiveFlow.isNotEmpty) {
+          queryParams['authentik_flow'] = effectiveFlow;
+        }
+        if (effectiveIdpHint != null && effectiveIdpHint.isNotEmpty) {
+          queryParams['idp_hint'] = effectiveIdpHint;
+        }
+
+        final authUri = Uri.parse(authEndpoint).replace(queryParameters: queryParams);
 
         // 4. Redirect
         if (await canLaunchUrl(authUri)) {
@@ -146,12 +158,21 @@ class AuthProvider extends ChangeNotifier {
       // Native platform logic
       debugPrint('Starting native login with clientId: $clientId, redirectUrl: $redirectUrl');
 
+      final Map<String, String> additionalParameters = {};
+      if (effectiveFlow != null && effectiveFlow.isNotEmpty) {
+        additionalParameters['authentik_flow'] = effectiveFlow;
+      }
+      if (effectiveIdpHint != null && effectiveIdpHint.isNotEmpty) {
+        additionalParameters['idp_hint'] = effectiveIdpHint;
+      }
+
       final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           clientId,
           redirectUrl,
           discoveryUrl: discoveryUrl,
           scopes: ['openid', 'profile', 'email', 'offline_access'],
+          additionalParameters: additionalParameters.isNotEmpty ? additionalParameters : null,
         ),
       );
 

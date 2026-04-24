@@ -11,6 +11,8 @@ class UserProfile {
   final String icon;
   final DateTime? dateOfBirth;
   final String country;
+  final String name;
+  final String email;
 
   UserProfile({
     required this.language,
@@ -23,6 +25,8 @@ class UserProfile {
     required this.icon,
     this.dateOfBirth,
     required this.country,
+    required this.name,
+    required this.email,
   });
 
   UserProfile copyWith({
@@ -36,6 +40,8 @@ class UserProfile {
     String? icon,
     DateTime? dateOfBirth,
     String? country,
+    String? name,
+    String? email,
   }) {
     return UserProfile(
       language: language ?? this.language,
@@ -48,6 +54,8 @@ class UserProfile {
       icon: icon ?? this.icon,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       country: country ?? this.country,
+      name: name ?? this.name,
+      email: email ?? this.email,
     );
   }
 
@@ -63,21 +71,34 @@ class UserProfile {
       'icon': icon,
       'dateOfBirth': dateOfBirth?.toIso8601String(),
       'country': country,
+      'name': name,
+      'email': email,
     };
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
+    // Handling Authentik/OIDC standard claims and custom attributes
+    final String name = map['name'] ?? map['preferred_username'] ?? 'User';
+    final String email = map['email'] ?? '';
+
+    // Custom attributes in Authentik are often under 'attributes' key or flattened
+    final attributes = map['attributes'] ?? {};
+
     return UserProfile(
-      language: map['language'] ?? 'en',
-      confidence: (map['confidence'] ?? 0.5).toDouble(),
-      defaultWorkshopLength: map['defaultWorkshopLength'] ?? 60,
-      defaultWorkshopSetting: map['defaultWorkshopSetting'] ?? 'on-site',
-      defaultGroupSize: map['defaultGroupSize'] ?? 10,
-      isGoogleConnected: map['isGoogleConnected'] ?? false,
-      color: map['color'] ?? '#25AFF4',
-      icon: map['icon'] ?? 'person',
-      dateOfBirth: map['dateOfBirth'] != null ? DateTime.parse(map['dateOfBirth']) : null,
-      country: map['country'] ?? '',
+      language: attributes['language'] ?? map['language'] ?? 'en',
+      confidence: (attributes['confidence'] ?? map['confidence'] ?? 0.5).toDouble(),
+      defaultWorkshopLength: attributes['defaultWorkshopLength'] ?? map['defaultWorkshopLength'] ?? 60,
+      defaultWorkshopSetting: attributes['defaultWorkshopSetting'] ?? map['defaultWorkshopSetting'] ?? 'on-site',
+      defaultGroupSize: attributes['defaultGroupSize'] ?? map['defaultGroupSize'] ?? 10,
+      isGoogleConnected: attributes['isGoogleConnected'] ?? map['isGoogleConnected'] ?? false,
+      color: attributes['color'] ?? map['color'] ?? '#25AFF4',
+      icon: attributes['icon'] ?? map['icon'] ?? 'person',
+      dateOfBirth: (attributes['dateOfBirth'] ?? map['dateOfBirth']) != null
+          ? DateTime.parse(attributes['dateOfBirth'] ?? map['dateOfBirth'])
+          : null,
+      country: attributes['country'] ?? map['country'] ?? '',
+      name: name,
+      email: email,
     );
   }
 

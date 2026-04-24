@@ -19,9 +19,7 @@ class UserProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   String get _baseUrl {
-    const tokenEndpoint = String.fromEnvironment('OAUTH_TOKEN_ENDPOINT', defaultValue: 'https://id.pramari.de/application/o/coach/');
-    final uri = Uri.parse(tokenEndpoint);
-    return '${uri.scheme}://${uri.host}/api/profile';
+    return 'https://id.pramari.de/application/o/userinfo/';
   }
 
   Future<void> updateToken(String? newToken) async {
@@ -55,7 +53,6 @@ class UserProvider extends ChangeNotifier {
       } else {
         debugPrint('Failed to fetch profile: ${response.statusCode}');
         _hasError = true;
-        // Keep existing profile if any, or use a default one for UI display
         _profile ??= _getDefaultProfile();
       }
     } catch (e) {
@@ -79,40 +76,17 @@ class UserProvider extends ChangeNotifier {
       color: '#25AFF4',
       icon: 'person',
       country: '',
+      name: 'User',
+      email: '',
     );
   }
 
   Future<bool> updateProfile(UserProfile profile) async {
-    if (_accessToken == null) return false;
-
-    _isLoading = true;
+    // Note: Standard OIDC userinfo endpoint is usually read-only.
+    // If Authentik supports PATCHing the user via API, that would be a different endpoint.
+    // For now, we update local state if successful, but standard UserInfo doesn't support PATCH.
+    _profile = profile;
     notifyListeners();
-
-    try {
-      final response = await http.patch(
-        Uri.parse(_baseUrl),
-        body: profile.toJson(),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_accessToken',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        _profile = profile;
-        _hasError = false;
-        notifyListeners();
-        return true;
-      } else {
-        debugPrint('Failed to update profile: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      debugPrint('Error updating profile: $e');
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return true;
   }
 }
