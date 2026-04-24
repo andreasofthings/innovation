@@ -115,4 +115,30 @@ class UserProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<void> toggleFavorite(int methodId) async {
+    if (_profile == null) return;
+
+    final updatedFavorites = List<int>.from(_profile!.favorites);
+    if (updatedFavorites.contains(methodId)) {
+      updatedFavorites.remove(methodId);
+    } else {
+      updatedFavorites.add(methodId);
+    }
+
+    final updatedProfile = _profile!.copyWith(favorites: updatedFavorites);
+    // Optimistic update
+    _profile = updatedProfile;
+    notifyListeners();
+
+    final success = await updateProfile(updatedProfile);
+    if (!success) {
+      // Revert on failure if needed, but for now we keep it local if offline
+      debugPrint('Favorite update failed on backend, kept locally.');
+    }
+  }
+
+  bool isFavorite(int methodId) {
+    return _profile?.favorites.contains(methodId) ?? false;
+  }
 }

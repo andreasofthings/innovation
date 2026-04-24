@@ -63,21 +63,30 @@ class Method {
     );
   }
 
-  Color get accentColor {
+  Color get typeColor {
     switch (methodType.toLowerCase()) {
       case 'warmup':
-        return Colors.white;
+        return const Color(0xFFFFBF00); // Amber
       case 'empathize':
-        return const Color(0xFFE1F5FE);
+        return const Color(0xFFFF8C00); // Orange
       case 'define':
-        return const Color(0xFFB3E5FC);
+        return const Color(0xFFFF0000); // Red
       case 'ideate':
-        return const Color(0xFF4FC3F7);
+        return const Color(0xFF008000); // Green
       case 'prototype':
-        return const Color(0xFF25AFF4);
+        return const Color(0xFF25AFF4); // Blue
       default:
-        return const Color(0xFF25AFF4);
+        return const Color(0xFF006590);
     }
+  }
+
+  Color get backgroundColor {
+    return typeColor.withOpacity(0.05);
+  }
+
+  @Deprecated('Use backgroundColor instead')
+  Color get accentColor {
+    return backgroundColor;
   }
 
   IconData get icon {
@@ -94,23 +103,6 @@ class Method {
         return Icons.directions_car;
       default:
         return Icons.help_outline;
-    }
-  }
-
-  Color get typeColor {
-    switch (methodType.toLowerCase()) {
-      case 'warmup':
-        return const Color(0xFFE3940A);
-      case 'empathize':
-        return const Color(0xFFF9A825);
-      case 'define':
-        return const Color(0xFFD32F2F);
-      case 'ideate':
-        return const Color(0xFF43A047);
-      case 'prototype':
-        return const Color(0xFF006590);
-      default:
-        return const Color(0xFF006590);
     }
   }
 }
