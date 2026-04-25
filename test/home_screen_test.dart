@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:coach/providers/auth_provider.dart';
 import 'package:coach/providers/user_provider.dart';
 import 'package:coach/providers/method_provider.dart';
+import 'package:coach/providers/workshop_provider.dart';
 
 void main() {
   testWidgets('HomePage navigation test', (WidgetTester tester) async {
@@ -20,6 +21,7 @@ void main() {
           ChangeNotifierProvider.value(value: authProvider),
           ChangeNotifierProvider(create: (context) => UserProvider(null)),
           ChangeNotifierProvider(create: (context) => MethodProvider()),
+          ChangeNotifierProvider(create: (context) => WorkshopProvider()),
         ],
         child: const MaterialApp(
           home: HomePage(title: 'Coach'),

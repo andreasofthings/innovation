@@ -4,12 +4,15 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/method_provider.dart';
+import 'providers/workshop_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/workshop_screen.dart';
+import 'screens/workshop_detail_screen.dart';
 import 'screens/favorites_screen.dart';
+import 'models/workshop.dart';
 import 'colorscheme.dart';
 
 void main() async {
@@ -30,6 +33,7 @@ void main() async {
           },
         ),
         ChangeNotifierProvider(create: (context) => MethodProvider()),
+        ChangeNotifierProvider(create: (context) => WorkshopProvider()),
       ],
       child: const Coach(),
     ),
@@ -54,6 +58,15 @@ class Coach extends StatelessWidget {
         return child!;
       },
       initialRoute: '/',
+      onGenerateRoute: (settings) {
+        if (settings.name == '/workshop-detail') {
+          final workshop = settings.arguments as Workshop;
+          return MaterialPageRoute(
+            builder: (context) => WorkshopDetailScreen(workshop: workshop),
+          );
+        }
+        return null;
+      },
       routes: {
         '/': (context) => const HomePage(title: 'Coach'),
         '/profile': (context) => const ProfileScreen(),
