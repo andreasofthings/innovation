@@ -15,7 +15,13 @@ void main() {
           ChangeNotifierProvider(create: (context) => AuthProvider()),
           ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
             create: (context) => UserProvider(null),
-            update: (context, auth, previous) => UserProvider(auth.accessToken),
+            update: (context, auth, previous) {
+              if (previous != null) {
+                previous.updateAuth(auth);
+                return previous;
+              }
+              return UserProvider(auth);
+            },
           ),
           ChangeNotifierProvider(create: (context) => MethodProvider()),
           ChangeNotifierProvider(create: (context) => WorkshopProvider()),
@@ -24,8 +30,6 @@ void main() {
       ),
     );
 
-    // After our changes, if not authenticated, LoginScreen should be shown.
-    // LoginScreen usually has a "Login" button or text.
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
