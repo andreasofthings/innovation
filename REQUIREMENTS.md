@@ -1,5 +1,7 @@
 # Coach
 
+Coach allows you to inprove customer work by supporting you with engagements.
+
 ## Goal
 
 ## Functional
