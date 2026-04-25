@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_profile.dart';
@@ -19,7 +20,7 @@ class UserProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   String get _baseUrl {
-    return 'https://pramari.de/api/v2/profile';
+    return 'https://www.pramari.de/coach/api/v2/profile';
   }
 
   Future<void> updateToken(String? newToken) async {
@@ -84,11 +85,17 @@ class UserProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> updateProfile(UserProfile profile) async {
+  /// Updates the profile. If [optimistic] is true, it updates the local state immediately.
+  Future<bool> updateProfile(UserProfile profile, {bool optimistic = true}) async {
+    final oldProfile = _profile;
+
+    if (optimistic) {
+      _profile = profile;
+      notifyListeners();
+    }
+
     if (_accessToken == null) {
       debugPrint('Update failed: Missing access token');
-      _profile = profile; // Update local anyway
-      notifyListeners();
       return false;
     }
 
@@ -108,10 +115,18 @@ class UserProvider extends ChangeNotifier {
         return true;
       } else {
         debugPrint('Failed to update profile: ${response.statusCode} ${response.body}');
+        if (optimistic) {
+          _profile = oldProfile;
+          notifyListeners();
+        }
         return false;
       }
     } catch (e) {
       debugPrint('Error updating profile: $e');
+      if (optimistic) {
+        _profile = oldProfile;
+        notifyListeners();
+      }
       return false;
     }
   }
@@ -127,15 +142,7 @@ class UserProvider extends ChangeNotifier {
     }
 
     final updatedProfile = _profile!.copyWith(favorites: updatedFavorites);
-    // Optimistic update
-    _profile = updatedProfile;
-    notifyListeners();
-
-    final success = await updateProfile(updatedProfile);
-    if (!success) {
-      // Revert on failure if needed, but for now we keep it local if offline
-      debugPrint('Favorite update failed on backend, kept locally.');
-    }
+    await updateProfile(updatedProfile, optimistic: true);
   }
 
   bool isFavorite(int methodId) {
