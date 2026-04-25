@@ -1,16 +1,16 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_profile.dart';
+import 'auth_provider.dart';
 
 class UserProvider extends ChangeNotifier {
-  String? _accessToken;
+  AuthProvider? _auth;
   UserProfile? _profile;
   bool _isLoading = false;
   bool _hasError = false;
 
-  UserProvider(this._accessToken) {
-    if (_accessToken != null) {
+  UserProvider(this._auth) {
+    if (_auth?.accessToken != null) {
       fetchProfile();
     }
   }
@@ -23,20 +23,23 @@ class UserProvider extends ChangeNotifier {
     return 'https://www.pramari.de/coach/api/v2/profile';
   }
 
-  Future<void> updateToken(String? newToken) async {
-    if (_accessToken == newToken) return;
-    _accessToken = newToken;
-    if (_accessToken != null) {
+  Future<void> updateAuth(AuthProvider? auth) async {
+    final oldToken = _auth?.accessToken;
+    _auth = auth;
+    final newToken = _auth?.accessToken;
+
+    if (newToken != null && oldToken != newToken) {
       await fetchProfile();
-    } else {
+    } else if (newToken == null) {
       _profile = null;
       _hasError = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchProfile() async {
-    if (_accessToken == null) return;
+  Future<void> fetchProfile({bool isRetry = false}) async {
+    final token = _auth?.accessToken;
+    if (token == null) return;
 
     _isLoading = true;
     _hasError = false;
@@ -46,7 +49,7 @@ class UserProvider extends ChangeNotifier {
       final response = await http.get(
         Uri.parse('$_baseUrl/'),
         headers: {
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
@@ -54,6 +57,15 @@ class UserProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         _profile = UserProfile.fromJson(response.body);
         _hasError = false;
+      } else if (response.statusCode == 401 && !isRetry) {
+        debugPrint('Fetch profile unauthorized, attempting token refresh');
+        final refreshed = await _auth?.refresh() ?? false;
+        if (refreshed) {
+          return await fetchProfile(isRetry: true);
+        } else {
+          _hasError = true;
+          _profile ??= _getDefaultProfile();
+        }
       } else {
         debugPrint('Failed to fetch profile: ${response.statusCode} ${response.body}');
         _hasError = true;
@@ -87,15 +99,22 @@ class UserProvider extends ChangeNotifier {
 
   /// Updates the profile. If [optimistic] is true, it updates the local state immediately.
   Future<bool> updateProfile(UserProfile profile, {bool optimistic = true}) async {
-    final oldProfile = _profile;
+    return _updateProfileInternal(profile, optimistic: optimistic, isRetry: false, originalProfile: _profile);
+  }
 
-    if (optimistic) {
+  Future<bool> _updateProfileInternal(UserProfile profile, {required bool optimistic, required bool isRetry, UserProfile? originalProfile}) async {
+    if (optimistic && !isRetry) {
       _profile = profile;
       notifyListeners();
     }
 
-    if (_accessToken == null) {
+    final token = _auth?.accessToken;
+    if (token == null) {
       debugPrint('Update failed: Missing access token');
+      if (optimistic) {
+        _profile = originalProfile;
+        notifyListeners();
+      }
       return false;
     }
 
@@ -103,7 +122,7 @@ class UserProvider extends ChangeNotifier {
       final response = await http.patch(
         Uri.parse('$_baseUrl/'),
         headers: {
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: profile.toJson(),
@@ -113,10 +132,22 @@ class UserProvider extends ChangeNotifier {
         _profile = UserProfile.fromJson(response.body);
         notifyListeners();
         return true;
+      } else if (response.statusCode == 401 && !isRetry) {
+        debugPrint('Update profile unauthorized, attempting token refresh');
+        final refreshed = await _auth?.refresh() ?? false;
+        if (refreshed) {
+          return await _updateProfileInternal(profile, optimistic: optimistic, isRetry: true, originalProfile: originalProfile);
+        } else {
+          if (optimistic) {
+            _profile = originalProfile;
+            notifyListeners();
+          }
+          return false;
+        }
       } else {
         debugPrint('Failed to update profile: ${response.statusCode} ${response.body}');
         if (optimistic) {
-          _profile = oldProfile;
+          _profile = originalProfile;
           notifyListeners();
         }
         return false;
@@ -124,7 +155,7 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error updating profile: $e');
       if (optimistic) {
-        _profile = oldProfile;
+        _profile = originalProfile;
         notifyListeners();
       }
       return false;

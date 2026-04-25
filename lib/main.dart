@@ -24,10 +24,10 @@ void main() async {
           create: (context) => UserProvider(null),
           update: (context, auth, previous) {
             if (previous != null) {
-              previous.updateToken(auth.accessToken);
+              previous.updateAuth(auth);
               return previous;
             }
-            return UserProvider(auth.accessToken);
+            return UserProvider(auth);
           },
         ),
         ChangeNotifierProvider(create: (context) => MethodProvider()),

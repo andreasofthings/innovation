@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   String? _accessToken;
   String? _idToken;
   String? _refreshToken;
+  Future<bool>? _refreshFuture;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get accessToken => _accessToken;
@@ -137,7 +137,7 @@ class AuthProvider extends ChangeNotifier {
           'code_challenge_method': 'S256',
         };
 
-        if (effectiveFlow != null && effectiveFlow.isNotEmpty) {
+        if (effectiveFlow.isNotEmpty) {
           queryParams['authentik_flow'] = effectiveFlow;
         }
         if (effectiveIdpHint != null && effectiveIdpHint.isNotEmpty) {
@@ -159,14 +159,14 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Starting native login with clientId: $clientId, redirectUrl: $redirectUrl');
 
       final Map<String, String> additionalParameters = {};
-      if (effectiveFlow != null && effectiveFlow.isNotEmpty) {
+      if (effectiveFlow.isNotEmpty) {
         additionalParameters['authentik_flow'] = effectiveFlow;
       }
       if (effectiveIdpHint != null && effectiveIdpHint.isNotEmpty) {
         additionalParameters['idp_hint'] = effectiveIdpHint;
       }
 
-      final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
+      final result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           clientId,
           redirectUrl,
@@ -251,9 +251,19 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refresh() async {
-    if (_refreshToken == null) return;
+  Future<bool> refresh() async {
+    if (_refreshToken == null) return false;
+    if (_refreshFuture != null) return _refreshFuture!;
 
+    _refreshFuture = _doRefresh();
+    try {
+      return await _refreshFuture!;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<bool> _doRefresh() async {
     try {
       _validateEnv();
       final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
@@ -277,13 +287,14 @@ class AuthProvider extends ChangeNotifier {
         if (refreshResponse.statusCode == 200) {
           final data = jsonDecode(refreshResponse.body);
           await _saveTokens(data['access_token'], data['id_token'], data['refresh_token']);
+          return true;
         } else {
           await logout();
+          return false;
         }
-        return;
       }
 
-      final TokenResponse? result = await _appAuth.token(
+      final result = await _appAuth.token(
         TokenRequest(
           clientId,
           redirectUrl,
@@ -293,12 +304,13 @@ class AuthProvider extends ChangeNotifier {
         ),
       );
 
-      if (result != null) {
-        await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
-      }
+      // result is TokenResponse which is non-nullable in newer flutter_appauth or at least the analyzer thinks so
+      await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
+      return true;
     } catch (e) {
       debugPrint('Refresh token error: $e');
       await logout();
+      return false;
     }
   }
 }
