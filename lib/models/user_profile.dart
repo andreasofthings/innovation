@@ -101,5 +101,8 @@ class UserProfile {
 
   String toJson() => json.encode(toMap());
 
-  factory UserProfile.fromJson(String source) => UserProfile.fromMap(json.decode(source));
+  factory UserProfile.fromJson(String source) {
+    final Map<String, dynamic> data = json.decode(source);
+    return UserProfile.fromMap(data);
+  }
 }
