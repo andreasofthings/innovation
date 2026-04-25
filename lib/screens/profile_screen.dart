@@ -15,6 +15,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  bool _isInitialized = false;
   late String _language;
   late double _confidence;
   late int _defaultWorkshopLength;
@@ -28,18 +30,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String _name;
   late String _email;
 
-  bool _isInitialized = false;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      final userProvider = Provider.of<UserProvider>(context);
+      final userProvider = context.watch<UserProvider>();
       final profile = userProvider.profile;
       if (profile != null) {
         _initializeFromProfile(profile);
       } else if (!userProvider.isLoading) {
-        // Initialize with defaults if profile is not available and not loading
         _initializeDefaults();
       }
     }
@@ -79,31 +78,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final userProvider = context.watch<UserProvider>();
-    final hasError = userProvider.hasError;
-    final isEnabled = !hasError && !userProvider.isLoading;
-
-    if (userProvider.isLoading && !_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // Show snackbar on error
-    if (hasError) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile not available. Using offline settings.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      });
-    }
+    final isEnabled = !userProvider.isLoading;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Profile'),
+        title: const Text('Alex Rivers', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -116,117 +97,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionTitle('Identity'),
-              Text('Name: $_name'),
-              const SizedBox(height: 8),
-              Text('Email: $_email'),
+              // Profile Header Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage: const NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBj2PeVZvItcOb1y1Vqs9ksQNbjUKfBePnfgdSyVGlPCWbD_RiIaCP8uiDPKT62JW23_1WILf4AxWsLCv7O_5dRA4p2Tx9y6t6bPvjiw1Yv7fjwynRfbs1Q2UKxGvzk3ex5CJR7JIhWBjHNPvb-LcUVv3QwIl3W8lOahvaEVDl4JaX-xt4myEHmrCzaE7gLdwdEpUjLgZZIkWwPThkhWjBlq6BYRFwcswxmBTjptfnvrWAMXH-lIzGa9x6_zWWrx6tHcaju51IDyiY'),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _name,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Lead Facilitator',
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'COACH LEVEL 42',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
-              _buildSectionTitle('General Settings'),
-              DropdownButtonFormField<String>(
-                value: _language,
-                decoration: const InputDecoration(labelText: 'Language'),
-                items: const [
-                  DropdownMenuItem(value: 'en', child: Text('English')),
-                  DropdownMenuItem(value: 'de', child: Text('German')),
+              _buildSettingSection(
+                context,
+                'IDENTITY',
+                [
+                  _buildTextInfo('Email', _email),
+                  _buildTextInfo('Country', _country),
                 ],
-                onChanged: isEnabled ? (value) => setState(() => _language = value!) : null,
               ),
               const SizedBox(height: 16),
-              Text('Confidence: ${(_confidence * 100).toInt()}%'),
-              Slider(
-                value: _confidence,
-                min: 0,
-                max: 1,
-                divisions: 10,
-                label: '${(_confidence * 100).toInt()}%',
-                onChanged: isEnabled ? (value) => setState(() => _confidence = value) : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _defaultWorkshopLength.toString(),
-                decoration: const InputDecoration(labelText: 'Default Length for Workshops (min)'),
-                keyboardType: TextInputType.number,
-                enabled: isEnabled,
-                onChanged: (value) => _defaultWorkshopLength = int.tryParse(value) ?? 60,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _defaultWorkshopSetting,
-                decoration: const InputDecoration(labelText: 'Default Setting for Workshops'),
-                items: const [
-                  DropdownMenuItem(value: 'remote', child: Text('Remote')),
-                  DropdownMenuItem(value: 'on-site', child: Text('On-site')),
-                  DropdownMenuItem(value: 'hybrid', child: Text('Hybrid')),
+              _buildSettingSection(
+                context,
+                'WORKSHOP PREFERENCES',
+                [
+                  _buildDropdownSetting('Default Setting', _defaultWorkshopSetting, ['remote', 'on-site', 'hybrid'], (val) => setState(() => _defaultWorkshopSetting = val!)),
+                  _buildTextSetting('Default Length (min)', _defaultWorkshopLength.toString(), (val) => _defaultWorkshopLength = int.tryParse(val) ?? 60),
                 ],
-                onChanged: isEnabled ? (value) => setState(() => _defaultWorkshopSetting = value!) : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _defaultGroupSize.toString(),
-                decoration: const InputDecoration(labelText: 'Default Group Size'),
-                keyboardType: TextInputType.number,
-                enabled: isEnabled,
-                onChanged: (value) => _defaultGroupSize = int.tryParse(value) ?? 10,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Personal Details'),
-              TextFormField(
-                initialValue: _country,
-                decoration: const InputDecoration(labelText: 'Country'),
-                enabled: isEnabled,
-                onChanged: (value) => _country = value,
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Date of Birth'),
-                subtitle: Text(_dateOfBirth == null ? 'Not set' : DateFormat('yyyy-MM-dd').format(_dateOfBirth!)),
-                trailing: const Icon(Icons.calendar_today),
-                enabled: isEnabled,
-                onTap: isEnabled ? _pickDateOfBirth : null,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Appearance'),
-              ListTile(
-                title: const Text('Theme Color'),
-                trailing: CircleAvatar(backgroundColor: _color),
-                enabled: isEnabled,
-                onTap: isEnabled ? _pickColor : null,
-              ),
-              TextFormField(
-                initialValue: _icon,
-                decoration: const InputDecoration(labelText: 'Icon Name'),
-                enabled: isEnabled,
-                onChanged: (value) => _icon = value,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Integrations'),
-              SwitchListTile(
-                title: const Text('Connection to Google'),
-                subtitle: const Text('For calendar configuration'),
-                value: _isGoogleConnected,
-                onChanged: isEnabled ? (value) {
-                  setState(() => _isGoogleConnected = value);
-                  if (value) {
-                    _connectToGoogle();
-                  }
-                } : null,
               ),
               const SizedBox(height: 32),
-              Center(
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () => context.read<AuthProvider>().logout(),
                   icon: const Icon(Icons.logout),
                   label: const Text('Logout'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(color: Theme.of(context).colorScheme.error),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    foregroundColor: colorScheme.error,
+                    side: BorderSide(color: colorScheme.error),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -234,64 +176,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
+  Widget _buildSettingSection(BuildContext context, String title, List<Widget> children) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: colorScheme.outline),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextInfo(String label, String value) {
+    return ListTile(
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      trailing: Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+    );
+  }
+
+  Widget _buildDropdownSetting(String label, String value, List<String> options, ValueChanged<String?> onChanged) {
+    return ListTile(
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      trailing: DropdownButton<String>(
+        value: value,
+        underline: Container(),
+        items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt))).toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildTextSetting(String label, String initialValue, ValueChanged<String> onChanged) {
+    return ListTile(
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      trailing: SizedBox(
+        width: 60,
+        child: TextFormField(
+          initialValue: initialValue,
+          textAlign: TextAlign.right,
+          decoration: const InputDecoration(border: InputBorder.none),
+          onChanged: onChanged,
         ),
       ),
     );
   }
 
-  Future<void> _pickDateOfBirth() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _dateOfBirth ?? DateTime(1990),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _dateOfBirth) {
-      setState(() => _dateOfBirth = picked);
-    }
-  }
-
-  void _pickColor() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pick a color'),
-          content: SingleChildScrollView(
-            child: ColorPicker(
-              pickerColor: _color,
-              onColorChanged: (color) => setState(() => _color = color),
-            ),
-          ),
-          actions: <Widget>[
-            ElevatedButton(
-              child: const Text('Done'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _connectToGoogle() {
-     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Connecting to Google (token sharing through pramari.de)...')),
-    );
-  }
-
   Future<void> _saveProfile() async {
     final userProvider = context.read<UserProvider>();
-
     final colorHex = '#${_color.value.toRadixString(16).substring(2).toUpperCase()}';
     final updatedProfile = UserProfile(
       language: _language,
@@ -307,12 +248,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       name: _name,
       email: _email,
     );
-
-    final success = await userProvider.updateProfile(updatedProfile);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(success ? 'Profile updated successfully' : 'Failed to update profile')),
-      );
-    }
+    await userProvider.updateProfile(updatedProfile);
   }
 }
