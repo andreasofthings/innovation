@@ -122,6 +122,8 @@ class AuthProvider extends ChangeNotifier {
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
       final authEndpoint = _getConfigValue('OAUTH_AUTHORIZATION_ENDPOINT');
 
+      final effectiveFlow = flow ?? 'coach-login';
+
       if (kIsWeb) {
         String finalAuthEndpoint = '';
         if (authEndpoint != null && authEndpoint.isNotEmpty) {
@@ -149,8 +151,8 @@ class AuthProvider extends ChangeNotifier {
           'code_challenge_method': 'S256',
         };
 
-        if (flow != null && flow.isNotEmpty) {
-          queryParams['authentik_flow'] = flow;
+        if (effectiveFlow.isNotEmpty) {
+          queryParams['authentik_flow'] = effectiveFlow;
         }
         if (idpHint != null && idpHint.isNotEmpty) {
           queryParams['idp_hint'] = idpHint;
@@ -171,8 +173,8 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Starting native login with clientId: $clientId, redirectUrl: $redirectUrl');
 
       final Map<String, String> additionalParameters = {};
-      if (flow != null && flow.isNotEmpty) {
-        additionalParameters['authentik_flow'] = flow;
+      if (effectiveFlow.isNotEmpty) {
+        additionalParameters['authentik_flow'] = effectiveFlow;
       }
       if (idpHint != null && idpHint.isNotEmpty) {
         additionalParameters['idp_hint'] = idpHint;
