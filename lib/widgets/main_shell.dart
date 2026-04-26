@@ -117,6 +117,7 @@ class _MainShellState extends State<MainShell> {
               title: const Text('Chat'),
               onTap: () {
                 Navigator.pop(context);
+                Navigator.pushNamed(context, '/chat');
               },
             ),
             ListTile(
