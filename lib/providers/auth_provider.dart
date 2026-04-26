@@ -87,9 +87,19 @@ class AuthProvider extends ChangeNotifier {
       case 'OAUTH_CLIENT_ID':
         return const String.fromEnvironment('OAUTH_CLIENT_ID');
       case 'OAUTH_REDIRECT_URL':
-        return 'https://coach.pramari.de/login-callback.html';
+        const fromEnv = String.fromEnvironment('OAUTH_REDIRECT_URL');
+        if (fromEnv.isNotEmpty) return fromEnv;
+        return kIsWeb
+            ? 'https://coach.pramari.de/login-callback.html'
+            : 'de.pramari.coach:/oauth2redirect';
       case 'OAUTH_DISCOVERY_URL':
+        const fromEnv = String.fromEnvironment('OAUTH_DISCOVERY_URL');
+        if (fromEnv.isNotEmpty) return fromEnv;
         return 'https://id.pramari.de/application/o/coach/.well-known/openid-configuration';
+      case 'OAUTH_AUTHORIZATION_ENDPOINT':
+        return const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
+      case 'OAUTH_TOKEN_ENDPOINT':
+        return const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
       default:
         return null;
     }
@@ -109,18 +119,19 @@ class AuthProvider extends ChangeNotifier {
       final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
-
-      final effectiveFlow = flow ?? 'coach-login';
-      final effectiveIdpHint = idpHint;
+      final authEndpoint = _getConfigValue('OAUTH_AUTHORIZATION_ENDPOINT');
 
       if (kIsWeb) {
-        debugPrint('Starting web login redirect to $discoveryUrl');
-
-        // 1. Fetch discovery doc
-        final response = await http.get(Uri.parse(discoveryUrl));
-        if (response.statusCode != 200) throw Exception('Failed to load discovery document');
-        final discovery = jsonDecode(response.body);
-        final authEndpoint = discovery['authorization_endpoint'];
+        String finalAuthEndpoint = '';
+        if (authEndpoint != null && authEndpoint.isNotEmpty) {
+          finalAuthEndpoint = authEndpoint;
+        } else {
+          debugPrint('Fetching discovery doc from $discoveryUrl');
+          final response = await http.get(Uri.parse(discoveryUrl));
+          if (response.statusCode != 200) throw Exception('Failed to load discovery document: ${response.statusCode}');
+          final discovery = jsonDecode(response.body);
+          finalAuthEndpoint = discovery['authorization_endpoint'];
+        }
 
         // 2. Prepare PKCE
         final verifier = _generateRandomString(64);
@@ -137,14 +148,14 @@ class AuthProvider extends ChangeNotifier {
           'code_challenge_method': 'S256',
         };
 
-        if (effectiveFlow != null && effectiveFlow.isNotEmpty) {
-          queryParams['authentik_flow'] = effectiveFlow;
+        if (flow != null && flow.isNotEmpty) {
+          queryParams['authentik_flow'] = flow;
         }
-        if (effectiveIdpHint != null && effectiveIdpHint.isNotEmpty) {
-          queryParams['idp_hint'] = effectiveIdpHint;
+        if (idpHint != null && idpHint.isNotEmpty) {
+          queryParams['idp_hint'] = idpHint;
         }
 
-        final authUri = Uri.parse(authEndpoint).replace(queryParameters: queryParams);
+        final authUri = Uri.parse(finalAuthEndpoint).replace(queryParameters: queryParams);
 
         // 4. Redirect
         if (await canLaunchUrl(authUri)) {
@@ -159,11 +170,11 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Starting native login with clientId: $clientId, redirectUrl: $redirectUrl');
 
       final Map<String, String> additionalParameters = {};
-      if (effectiveFlow != null && effectiveFlow.isNotEmpty) {
-        additionalParameters['authentik_flow'] = effectiveFlow;
+      if (flow != null && flow.isNotEmpty) {
+        additionalParameters['authentik_flow'] = flow;
       }
-      if (effectiveIdpHint != null && effectiveIdpHint.isNotEmpty) {
-        additionalParameters['idp_hint'] = effectiveIdpHint;
+      if (idpHint != null && idpHint.isNotEmpty) {
+        additionalParameters['idp_hint'] = idpHint;
       }
 
       final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
@@ -190,14 +201,20 @@ class AuthProvider extends ChangeNotifier {
       final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
+      final tokenEndpoint = _getConfigValue('OAUTH_TOKEN_ENDPOINT');
       final verifier = await _secureStorage.read(key: 'code_verifier');
 
-      final response = await http.get(Uri.parse(discoveryUrl));
-      final discovery = jsonDecode(response.body);
-      final tokenEndpoint = discovery['token_endpoint'];
+      String finalTokenEndpoint = '';
+      if (tokenEndpoint != null && tokenEndpoint.isNotEmpty) {
+        finalTokenEndpoint = tokenEndpoint;
+      } else {
+        final response = await http.get(Uri.parse(discoveryUrl));
+        final discovery = jsonDecode(response.body);
+        finalTokenEndpoint = discovery['token_endpoint'];
+      }
 
       final tokenResponse = await http.post(
-        Uri.parse(tokenEndpoint),
+        Uri.parse(finalTokenEndpoint),
         body: {
           'grant_type': 'authorization_code',
           'code': code,
@@ -259,14 +276,20 @@ class AuthProvider extends ChangeNotifier {
       final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
+      final tokenEndpoint = _getConfigValue('OAUTH_TOKEN_ENDPOINT');
 
       if (kIsWeb) {
-        final response = await http.get(Uri.parse(discoveryUrl));
-        final discovery = jsonDecode(response.body);
-        final tokenEndpoint = discovery['token_endpoint'];
+        String finalTokenEndpoint = '';
+        if (tokenEndpoint != null && tokenEndpoint.isNotEmpty) {
+          finalTokenEndpoint = tokenEndpoint;
+        } else {
+          final response = await http.get(Uri.parse(discoveryUrl));
+          final discovery = jsonDecode(response.body);
+          finalTokenEndpoint = discovery['token_endpoint'];
+        }
 
         final refreshResponse = await http.post(
-          Uri.parse(tokenEndpoint),
+          Uri.parse(finalTokenEndpoint),
           body: {
             'grant_type': 'refresh_token',
             'client_id': clientId,
