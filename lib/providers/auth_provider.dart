@@ -83,28 +83,42 @@ class AuthProvider extends ChangeNotifier {
   }
 
   String? _getConfigValue(String key) {
+    String value = '';
     switch (key) {
       case 'OAUTH_CLIENT_ID':
-        return const String.fromEnvironment('OAUTH_CLIENT_ID');
+        value = const String.fromEnvironment('OAUTH_CLIENT_ID');
+        break;
       case 'OAUTH_REDIRECT_URL':
-        const fromEnv = String.fromEnvironment('OAUTH_REDIRECT_URL');
-        if (fromEnv.isNotEmpty) return fromEnv;
-        return kIsWeb
-            ? 'https://coach.pramari.de/login-callback.html'
-            : 'de.pramari.coach:/oauth2redirect';
+        value = const String.fromEnvironment('OAUTH_REDIRECT_URL');
+        if (value.isEmpty) {
+          value = kIsWeb
+              ? 'https://coach.pramari.de/login-callback.html'
+              : 'de.pramari.coach:/oauth2redirect';
+        }
+        break;
       case 'OAUTH_DISCOVERY_URL':
-        const fromEnv = String.fromEnvironment('OAUTH_DISCOVERY_URL');
-        if (fromEnv.isNotEmpty) return fromEnv;
-        return 'https://id.pramari.de/application/o/coach/.well-known/openid-configuration';
+        value = const String.fromEnvironment('OAUTH_DISCOVERY_URL');
+        if (value.isEmpty) {
+          value = 'https://id.pramari.de/application/o/coach/.well-known/openid-configuration';
+        }
+        break;
       case 'OAUTH_AUTHORIZATION_ENDPOINT':
-        return const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
+        value = const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
+        break;
       case 'OAUTH_TOKEN_ENDPOINT':
-        return const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
+        value = const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
+        break;
       default:
         return null;
     }
+    return _sanitizeUrl(value);
   }
 
+  String? _sanitizeUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+    // Automatically replace /innovation/ with /coach/ to fix outdated environment variables
+    return url.replaceAll('/innovation/', '/coach/');
+  }
   void _validateEnv() {
     final clientId = _getConfigValue('OAUTH_CLIENT_ID');
     if (clientId == null || clientId.isEmpty) {

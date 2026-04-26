@@ -59,7 +59,7 @@ class LoginScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 24),
                             const Text(
-                              'Ready to Innovate?',
+                              'Ready to Coach?',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -67,7 +67,7 @@ class LoginScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             const Text(
-                              'Start planning your next coach here.',
+                              'Start planning your next workshop here.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
