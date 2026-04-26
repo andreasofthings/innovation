@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -330,6 +329,7 @@ class AuthProvider extends ChangeNotifier {
         ),
       );
 
+      // result is TokenResponse which is non-nullable in newer flutter_appauth or at least the analyzer thinks so
       await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
       return true;
     } catch (e) {

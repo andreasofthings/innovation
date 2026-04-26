@@ -11,7 +11,7 @@ The Profile Screen allows authenticated users to view and edit their Coach appli
 
 **Base URL:** `https://www.pramari.de/api/v2/profile/`
 
-**Authentication:**
+**Authentication:** 
 - All requests must include the Authentik JWT access token
 - Header format: `Authorization: Bearer {access_token}`
 - Token is available from `AuthProvider.accessToken`
@@ -277,17 +277,17 @@ Use the existing `UserProvider`:
 Consumer<UserProvider>(
   builder: (context, userProvider, child) {
     final profile = userProvider.profile;
-
+    
     if (userProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-
+    
     if (userProvider.hasError) {
       return Center(
         child: Text('Failed to load profile'),
       );
     }
-
+    
     return SingleChildScrollView(
       child: Column(
         children: [
