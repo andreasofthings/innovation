@@ -5,10 +5,12 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/method_provider.dart';
 import 'providers/workshop_provider.dart';
+import 'providers/chat_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/workshop_detail_screen.dart';
 import 'screens/favorites_screen.dart';
+import 'screens/chat_screen.dart';
 import 'models/workshop.dart';
 import 'colorscheme.dart';
 import 'widgets/main_shell.dart';
@@ -32,6 +34,7 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (context) => MethodProvider()),
         ChangeNotifierProvider(create: (context) => WorkshopProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: const Coach(),
     ),
@@ -69,6 +72,7 @@ class Coach extends StatelessWidget {
         '/': (context) => const MainShell(),
         '/profile': (context) => const ProfileScreen(),
         '/favorites': (context) => const FavoritesScreen(),
+        '/chat': (context) => const ChatScreen(),
       },
     );
   }
