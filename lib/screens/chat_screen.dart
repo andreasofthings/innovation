@@ -43,47 +43,40 @@ class _ChatScreenState extends State<ChatScreen> {
     final chatProvider = context.watch<ChatProvider>();
     final colorScheme = Theme.of(context).colorScheme;
 
-    return PopScope(
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) {
-           await chatProvider.leaveRoom();
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Sauna Chat'),
-          actions: [
-            if (chatProvider.isLoading)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sauna Chat'),
+        actions: [
+          if (chatProvider.isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
-          ],
-        ),
-        body: Column(
-          children: [
-            if (chatProvider.error != null)
-              Container(
-                color: colorScheme.errorContainer,
-                padding: const EdgeInsets.all(8.0),
-                width: double.infinity,
-                child: Text(
-                  chatProvider.error!,
-                  style: TextStyle(color: colorScheme.onErrorContainer),
-                ),
-              ),
-            Expanded(
-              child: chatProvider.room == null
-                  ? const Center(child: Text('Connecting to #sauna...'))
-                  : _buildTimeline(chatProvider),
             ),
-            _buildInputArea(colorScheme),
-          ],
-        ),
+        ],
+      ),
+      body: Column(
+        children: [
+          if (chatProvider.error != null)
+            Container(
+              color: colorScheme.errorContainer,
+              padding: const EdgeInsets.all(8.0),
+              width: double.infinity,
+              child: SelectableText(
+                chatProvider.error!,
+                style: TextStyle(color: colorScheme.onErrorContainer),
+              ),
+            ),
+          Expanded(
+            child: chatProvider.room == null
+                ? const Center(child: Text('Connecting to #sauna...'))
+                : _buildTimeline(chatProvider),
+          ),
+          _buildInputArea(colorScheme),
+        ],
       ),
     );
   }

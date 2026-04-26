@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart' as sqlite;
@@ -32,15 +33,24 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final directory = await getApplicationSupportDirectory();
-      final dbPath = '${directory.path}/matrix_sdk.db';
+      dynamic database;
+
+      if (kIsWeb) {
+        // On Web, use the default MatrixSdkDatabase.init which uses web-compatible storage
+        database = await MatrixSdkDatabase.init('CoachChat');
+      } else {
+        // On Native platforms, use sqflite with path_provider
+        final directory = await getApplicationSupportDirectory();
+        final dbPath = '${directory.path}/matrix_sdk.db';
+        database = await MatrixSdkDatabase.init(
+          'CoachChat',
+          database: await sqlite.openDatabase(dbPath),
+        );
+      }
 
       _client = Client(
         'CoachChat',
-        database: await MatrixSdkDatabase.init(
-          'CoachChat',
-          database: await sqlite.openDatabase(dbPath),
-        ),
+        database: database,
       );
 
       await _client!.init();
@@ -62,7 +72,7 @@ class ChatProvider extends ChangeNotifier {
       });
 
     } catch (e) {
-      _error = e.toString();
+      _error = 'Chat error: $e';
       debugPrint('Chat initialization error: $e');
     } finally {
       _isLoading = false;
@@ -75,7 +85,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       await _room!.sendTextEvent(text);
     } catch (e) {
-      _error = e.toString();
+      _error = 'Send error: $e';
       notifyListeners();
     }
   }
