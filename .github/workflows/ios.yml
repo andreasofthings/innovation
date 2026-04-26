@@ -22,4 +22,11 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS
-        run: flutter build ios --release --no-codesign
+        run: >
+          flutter build ios --release --no-codesign
+          --dart-define=OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }}
+          --dart-define=OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
+          --dart-define=OAUTH_REDIRECT_URL=${{ secrets.OAUTH_REDIRECT_URL }}
+          --dart-define=OAUTH_AUTHORIZATION_ENDPOINT=${{ secrets.OAUTH_AUTHORIZATION_ENDPOINT }}
+          --dart-define=OAUTH_TOKEN_ENDPOINT=${{ secrets.OAUTH_TOKEN_ENDPOINT }}
+          --dart-define=OAUTH_DISCOVERY_URL=${{ secrets.OAUTH_DISCOVERY_URL }}

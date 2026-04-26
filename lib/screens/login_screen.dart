@@ -104,47 +104,6 @@ class LoginScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              _handleEnroll(context);
-                            },
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: colorScheme.primary),
-                              foregroundColor: colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Create Account',
-                              style: TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              _handleSocialLogin(context);
-                            },
-                            icon: const Icon(Icons.account_circle_outlined),
-                            label: const Text(
-                              'Continue with Social Login',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -186,25 +145,6 @@ class LoginScreen extends StatelessWidget {
   Future<void> _handleLogin(BuildContext context) async {
     try {
       await context.read<AuthProvider>().login();
-    } catch (e) {
-      _showError(context, e);
-    }
-  }
-
-  Future<void> _handleEnroll(BuildContext context) async {
-    try {
-      final auth = context.read<AuthProvider>();
-      await auth.login(flow: 'coach-enrollment');
-    } catch (e) {
-      _showError(context, e);
-    }
-  }
-
-  Future<void> _handleSocialLogin(BuildContext context) async {
-    try {
-      await context.read<AuthProvider>().login(
-            idpHint: 'google',
-          );
     } catch (e) {
       _showError(context, e);
     }
