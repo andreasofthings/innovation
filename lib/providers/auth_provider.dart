@@ -18,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
   String? _accessToken;
   String? _idToken;
   String? _refreshToken;
+  Future<bool>? _refreshFuture;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get accessToken => _accessToken;
@@ -177,7 +178,7 @@ class AuthProvider extends ChangeNotifier {
         additionalParameters['idp_hint'] = idpHint;
       }
 
-      final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
+      final result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           clientId,
           redirectUrl,
@@ -268,9 +269,19 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refresh() async {
-    if (_refreshToken == null) return;
+  Future<bool> refresh() async {
+    if (_refreshToken == null) return false;
+    if (_refreshFuture != null) return _refreshFuture!;
 
+    _refreshFuture = _doRefresh();
+    try {
+      return await _refreshFuture!;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<bool> _doRefresh() async {
     try {
       _validateEnv();
       final clientId = _getConfigValue('OAUTH_CLIENT_ID')!;
@@ -300,13 +311,14 @@ class AuthProvider extends ChangeNotifier {
         if (refreshResponse.statusCode == 200) {
           final data = jsonDecode(refreshResponse.body);
           await _saveTokens(data['access_token'], data['id_token'], data['refresh_token']);
+          return true;
         } else {
           await logout();
+          return false;
         }
-        return;
       }
 
-      final TokenResponse? result = await _appAuth.token(
+      final result = await _appAuth.token(
         TokenRequest(
           clientId,
           redirectUrl,
@@ -316,12 +328,12 @@ class AuthProvider extends ChangeNotifier {
         ),
       );
 
-      if (result != null) {
-        await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
-      }
+      await _saveTokens(result.accessToken, result.idToken, result.refreshToken);
+      return true;
     } catch (e) {
       debugPrint('Refresh token error: $e');
       await logout();
+      return false;
     }
   }
 }

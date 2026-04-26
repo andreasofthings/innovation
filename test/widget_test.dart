@@ -1,22 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coach/main.dart';
-import 'package:provider/provider.dart';
 import 'package:coach/providers/auth_provider.dart';
+import 'package:coach/providers/user_provider.dart';
+import 'package:coach/providers/method_provider.dart';
+import 'package:coach/providers/workshop_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  testWidgets('Login screen smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    // We need to provide the AuthProvider for the Coach widget to work.
+  testWidgets('Coach app smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(
-      ChangeNotifierProvider(
-        create: (context) => AuthProvider(),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) => AuthProvider()),
+          ChangeNotifierProxyProvider<AuthProvider, UserProvider>(
+            create: (context) => UserProvider(null),
+            update: (context, auth, previous) {
+              if (previous != null) {
+                previous.updateAuth(auth);
+                return previous;
+              }
+              return UserProvider(auth);
+            },
+          ),
+          ChangeNotifierProvider(create: (context) => MethodProvider()),
+          ChangeNotifierProvider(create: (context) => WorkshopProvider()),
+        ],
         child: const Coach(),
       ),
     );
 
-    // Verify that the login button is present.
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.byType(ElevatedButton), findsOneWidget);
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

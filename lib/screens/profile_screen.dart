@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../providers/user_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_profile.dart';
@@ -14,305 +14,446 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late String _language;
-  late double _confidence;
-  late int _defaultWorkshopLength;
-  late String _defaultWorkshopSetting;
-  late int _defaultGroupSize;
-  late bool _isGoogleConnected;
-  late Color _color;
-  late String _icon;
-  DateTime? _dateOfBirth;
-  late String _country;
-  late String _name;
-  late String _email;
+  Timer? _debounce;
 
-  bool _isInitialized = false;
+  final List<String> _countries = [
+    'Germany', 'United States', 'United Kingdom', 'France', 'Spain',
+    'Italy', 'Canada', 'Australia', 'Switzerland', 'Austria'
+  ];
+
+  final Map<String, IconData> _icons = {
+    'person': Icons.person,
+    'star': Icons.star,
+    'work': Icons.work,
+    'school': Icons.school,
+    'home': Icons.home,
+    'favorite': Icons.favorite,
+    'settings': Icons.settings,
+    'group': Icons.group,
+    'rocket': Icons.rocket_launch,
+    'lightbulb': Icons.lightbulb,
+  };
+
+  final List<Color> _brandColors = [
+    const Color(0xFF25AFF4), // Seed / PrimaryContainer
+    const Color(0xFF006590), // Primary
+    const Color(0xFF3C627D), // Secondary
+    const Color(0xFF845400), // Tertiary
+    const Color(0xFFE3940A), // TertiaryContainer
+    const Color(0xFFB8DFFE), // SecondaryContainer
+    const Color(0xFF171C20), // onSurface
+    const Color(0xFF6E7881), // outline
+  ];
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      final userProvider = Provider.of<UserProvider>(context);
-      final profile = userProvider.profile;
-      if (profile != null) {
-        _initializeFromProfile(profile);
-      } else if (!userProvider.isLoading) {
-        // Initialize with defaults if profile is not available and not loading
-        _initializeDefaults();
-      }
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _updateProfileField(UserProfile Function(UserProfile) updater) {
+    final userProvider = context.read<UserProvider>();
+    final currentProfile = userProvider.profile;
+    if (currentProfile != null) {
+      final updatedProfile = updater(currentProfile);
+      userProvider.updateProfile(updatedProfile);
     }
-  }
-
-  void _initializeFromProfile(UserProfile profile) {
-    _language = profile.language;
-    _confidence = profile.confidence;
-    _defaultWorkshopLength = profile.defaultWorkshopLength;
-    _defaultWorkshopSetting = profile.defaultWorkshopSetting;
-    _defaultGroupSize = profile.defaultGroupSize;
-    _isGoogleConnected = profile.isGoogleConnected;
-    _color = Color(int.parse(profile.color.replaceFirst('#', '0xFF')));
-    _icon = profile.icon;
-    _dateOfBirth = profile.dateOfBirth;
-    _country = profile.country;
-    _name = profile.name;
-    _email = profile.email;
-    _isInitialized = true;
-  }
-
-  void _initializeDefaults() {
-    _language = 'en';
-    _confidence = 0.5;
-    _defaultWorkshopLength = 60;
-    _defaultWorkshopSetting = 'on-site';
-    _defaultGroupSize = 10;
-    _isGoogleConnected = false;
-    _color = const Color(0xFF25AFF4);
-    _icon = 'person';
-    _dateOfBirth = null;
-    _country = '';
-    _name = 'User';
-    _email = '';
-    _isInitialized = true;
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final userProvider = context.watch<UserProvider>();
-    final hasError = userProvider.hasError;
-    final isEnabled = !hasError && !userProvider.isLoading;
+    final profile = userProvider.profile;
 
-    if (userProvider.isLoading && !_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+    if (profile == null && userProvider.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Show snackbar on error
-    if (hasError) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile not available. Using offline settings.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      });
+    if (profile == null) {
+      return const Scaffold(body: Center(child: Text('Profile not found')));
     }
+
+    final avatarColor = Color(int.parse(profile.color.replaceFirst('#', '0xFF')));
+    final avatarIcon = _icons[profile.icon] ?? Icons.person;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: isEnabled ? _saveProfile : null,
-          ),
-        ],
+        title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle('Identity'),
-              Text('Name: $_name'),
-              const SizedBox(height: 8),
-              Text('Email: $_email'),
-              const SizedBox(height: 24),
-              _buildSectionTitle('General Settings'),
-              DropdownButtonFormField<String>(
-                value: _language,
-                decoration: const InputDecoration(labelText: 'Language'),
-                items: const [
-                  DropdownMenuItem(value: 'en', child: Text('English')),
-                  DropdownMenuItem(value: 'de', child: Text('German')),
+        child: Column(
+          children: [
+            // Profile Header Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.3)),
+              ),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: avatarColor,
+                    child: Icon(avatarIcon, size: 40, color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    profile.name,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    profile.email,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
                 ],
-                onChanged: isEnabled ? (value) => setState(() => _language = value!) : null,
               ),
-              const SizedBox(height: 16),
-              Text('Confidence: ${(_confidence * 100).toInt()}%'),
-              Slider(
-                value: _confidence,
-                min: 0,
-                max: 1,
-                divisions: 10,
-                label: '${(_confidence * 100).toInt()}%',
-                onChanged: isEnabled ? (value) => setState(() => _confidence = value) : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _defaultWorkshopLength.toString(),
-                decoration: const InputDecoration(labelText: 'Default Length for Workshops (min)'),
-                keyboardType: TextInputType.number,
-                enabled: isEnabled,
-                onChanged: (value) => _defaultWorkshopLength = int.tryParse(value) ?? 60,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _defaultWorkshopSetting,
-                decoration: const InputDecoration(labelText: 'Default Setting for Workshops'),
-                items: const [
-                  DropdownMenuItem(value: 'remote', child: Text('Remote')),
-                  DropdownMenuItem(value: 'on-site', child: Text('On-site')),
-                  DropdownMenuItem(value: 'hybrid', child: Text('Hybrid')),
-                ],
-                onChanged: isEnabled ? (value) => setState(() => _defaultWorkshopSetting = value!) : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _defaultGroupSize.toString(),
-                decoration: const InputDecoration(labelText: 'Default Group Size'),
-                keyboardType: TextInputType.number,
-                enabled: isEnabled,
-                onChanged: (value) => _defaultGroupSize = int.tryParse(value) ?? 10,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Personal Details'),
-              TextFormField(
-                initialValue: _country,
-                decoration: const InputDecoration(labelText: 'Country'),
-                enabled: isEnabled,
-                onChanged: (value) => _country = value,
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Date of Birth'),
-                subtitle: Text(_dateOfBirth == null ? 'Not set' : DateFormat('yyyy-MM-dd').format(_dateOfBirth!)),
-                trailing: const Icon(Icons.calendar_today),
-                enabled: isEnabled,
-                onTap: isEnabled ? _pickDateOfBirth : null,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Appearance'),
-              ListTile(
-                title: const Text('Theme Color'),
-                trailing: CircleAvatar(backgroundColor: _color),
-                enabled: isEnabled,
-                onTap: isEnabled ? _pickColor : null,
-              ),
-              TextFormField(
-                initialValue: _icon,
-                decoration: const InputDecoration(labelText: 'Icon Name'),
-                enabled: isEnabled,
-                onChanged: (value) => _icon = value,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Integrations'),
-              SwitchListTile(
-                title: const Text('Connection to Google'),
-                subtitle: const Text('For calendar configuration'),
-                value: _isGoogleConnected,
-                onChanged: isEnabled ? (value) {
-                  setState(() => _isGoogleConnected = value);
-                  if (value) {
-                    _connectToGoogle();
-                  }
-                } : null,
-              ),
-              const SizedBox(height: 32),
-              Center(
-                child: OutlinedButton.icon(
-                  onPressed: () => context.read<AuthProvider>().logout(),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(color: Theme.of(context).colorScheme.error),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            ),
+            const SizedBox(height: 24),
+
+            _buildSection(
+              context,
+              'PERSONAL INFORMATION',
+              [
+                _buildDropdown<String>(
+                  label: 'Language',
+                  value: profile.language,
+                  items: [
+                    const DropdownMenuItem(value: 'en', child: Text('English')),
+                    const DropdownMenuItem(value: 'de', child: Text('German')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) _updateProfileField((p) => p.copyWith(language: val));
+                  },
+                ),
+                _buildDropdown<String>(
+                  label: 'Country',
+                  value: _countries.contains(profile.country) ? profile.country : null,
+                  hint: 'Select Country',
+                  items: _countries.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (val) {
+                    if (val != null) _updateProfileField((p) => p.copyWith(country: val));
+                  },
+                ),
+                ListTile(
+                  title: const Text('Date of Birth', style: TextStyle(fontSize: 14)),
+                  trailing: Text(
+                    profile.dateOfBirth != null ? DateFormat('yyyy-MM-dd').format(profile.dateOfBirth!) : 'Not set',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: profile.dateOfBirth ?? DateTime(1990),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      _updateProfileField((p) => p.copyWith(dateOfBirth: picked));
+                    }
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            _buildSection(
+              context,
+              'WORKSHOP PREFERENCES',
+              [
+                _buildDropdown<String>(
+                  label: 'Default Setting',
+                  value: profile.defaultWorkshopSetting,
+                  items: const [
+                    DropdownMenuItem(value: 'on-site', child: Text('On-Site')),
+                    DropdownMenuItem(value: 'hybrid', child: Text('Hybrid')),
+                    DropdownMenuItem(value: 'virtual', child: Text('Virtual')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) _updateProfileField((p) => p.copyWith(defaultWorkshopSetting: val));
+                  },
+                ),
+                _buildNumberInput(
+                  label: 'Default Length (min)',
+                  initialValue: profile.defaultWorkshopLength.toString(),
+                  onChanged: (val) {
+                    final length = int.tryParse(val);
+                    if (length != null && length > 0) {
+                      if (_debounce?.isActive ?? false) _debounce!.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 500), () {
+                        _updateProfileField((p) => p.copyWith(defaultWorkshopLength: length));
+                      });
+                    }
+                  },
+                ),
+                _buildNumberInput(
+                  label: 'Default Group Size',
+                  initialValue: profile.defaultGroupSize.toString(),
+                  onChanged: (val) {
+                    final size = int.tryParse(val);
+                    if (size != null && size > 0) {
+                      if (_debounce?.isActive ?? false) _debounce!.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 500), () {
+                        _updateProfileField((p) => p.copyWith(defaultGroupSize: size));
+                      });
+                    }
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Confidence Level', style: TextStyle(fontSize: 14)),
+                          Text('${(profile.confidence * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Slider(
+                        value: profile.confidence,
+                        min: 0.0,
+                        max: 1.0,
+                        divisions: 10,
+                        label: '${(profile.confidence * 100).toInt()}%',
+                        onChanged: (val) {
+                          if (_debounce?.isActive ?? false) _debounce!.cancel();
+                          _debounce = Timer(const Duration(milliseconds: 200), () {
+                            _updateProfileField((p) => p.copyWith(confidence: val));
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            _buildSection(
+              context,
+              'VISUAL PREFERENCES',
+              [
+                ListTile(
+                  title: const Text('Theme Color', style: TextStyle(fontSize: 14)),
+                  trailing: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: avatarColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                  ),
+                  onTap: () => _showColorPicker(context, profile),
+                ),
+                ListTile(
+                  title: const Text('Profile Icon', style: TextStyle(fontSize: 14)),
+                  trailing: Icon(avatarIcon, color: colorScheme.primary),
+                  onTap: () => _showIconPicker(context, profile),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            _buildSection(
+              context,
+              'INTEGRATIONS',
+              [
+                SwitchListTile(
+                  title: const Text('Google Calendar', style: TextStyle(fontSize: 14)),
+                  value: profile.isGoogleConnected,
+                  onChanged: null, // Disabled as per requirements
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            _buildSection(
+              context,
+              'ACTIVITY',
+              [
+                ListTile(
+                  title: const Text('Favorite Methods', style: TextStyle(fontSize: 14)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${profile.favorites.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () => Navigator.pushNamed(context, '/favorites'),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.read<AuthProvider>().logout(),
+                icon: const Icon(Icons.logout),
+                label: const Text('Logout'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.error,
+                  side: BorderSide(color: colorScheme.error),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
-              const SizedBox(height: 32),
+            ),
+            const SizedBox(height: 48),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(BuildContext context, String title, List<Widget> children) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: colorScheme.outline),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+    String? hint,
+  }) {
+    return ListTile(
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      trailing: DropdownButton<T>(
+        value: value,
+        hint: hint != null ? Text(hint) : null,
+        underline: Container(),
+        items: items,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildNumberInput({
+    required String label,
+    required String initialValue,
+    required ValueChanged<String> onChanged,
+  }) {
+    return ListTile(
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      trailing: SizedBox(
+        width: 60,
+        child: TextFormField(
+          initialValue: initialValue,
+          key: ValueKey(initialValue), // Ensure it rebuilds with new external value
+          textAlign: TextAlign.right,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(border: InputBorder.none),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  void _showColorPicker(BuildContext context, UserProfile profile) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select Theme Color', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _brandColors.map((color) {
+                  final hex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+                  final isSelected = profile.color == hex;
+                  return GestureDetector(
+                    onTap: () {
+                      _updateProfileField((p) => p.copyWith(color: hex));
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: isSelected ? Border.all(color: Colors.black, width: 3) : null,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, spreadRadius: 1)
+                        ],
+                      ),
+                      child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickDateOfBirth() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _dateOfBirth ?? DateTime(1990),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _dateOfBirth) {
-      setState(() => _dateOfBirth = picked);
-    }
-  }
-
-  void _pickColor() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pick a color'),
-          content: SingleChildScrollView(
-            child: ColorPicker(
-              pickerColor: _color,
-              onColorChanged: (color) => setState(() => _color = color),
-            ),
-          ),
-          actions: <Widget>[
-            ElevatedButton(
-              child: const Text('Done'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
         );
       },
     );
   }
 
-  void _connectToGoogle() {
-     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Connecting to Google (token sharing through pramari.de)...')),
+  void _showIconPicker(BuildContext context, UserProfile profile) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select Profile Icon', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: GridView.count(
+                  crossAxisCount: 5,
+                  children: _icons.entries.map((entry) {
+                    final isSelected = profile.icon == entry.key;
+                    return IconButton(
+                      icon: Icon(entry.value),
+                      color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                      onPressed: () {
+                        _updateProfileField((p) => p.copyWith(icon: entry.key));
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-  }
-
-  Future<void> _saveProfile() async {
-    final userProvider = context.read<UserProvider>();
-
-    final colorHex = '#${_color.value.toRadixString(16).substring(2).toUpperCase()}';
-    final updatedProfile = UserProfile(
-      language: _language,
-      confidence: _confidence,
-      defaultWorkshopLength: _defaultWorkshopLength,
-      defaultWorkshopSetting: _defaultWorkshopSetting,
-      defaultGroupSize: _defaultGroupSize,
-      isGoogleConnected: _isGoogleConnected,
-      color: colorHex,
-      icon: _icon,
-      dateOfBirth: _dateOfBirth,
-      country: _country,
-      name: _name,
-      email: _email,
-    );
-
-    final success = await userProvider.updateProfile(updatedProfile);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(success ? 'Profile updated successfully' : 'Failed to update profile')),
-      );
-    }
   }
 }

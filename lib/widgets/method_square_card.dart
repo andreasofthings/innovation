@@ -15,90 +15,89 @@ class MethodSquareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: method.backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4), // Based on ROUND_FOUR memory
-        side: BorderSide(
-          color: method.typeColor.withOpacity(0.1),
-          width: 1,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(0), // Stitch shows square corners for cards
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
           children: [
-            // 8px horizontal color bar at the top
-            Container(
-              height: 8,
-              width: double.infinity,
-              color: method.typeColor,
+            // Top Accent Bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 4,
+              child: Container(color: method.typeColor),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Stack(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 12),
-                        Text(
-                          method.title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                height: 1.1,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: method.typeColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: Text(
-                            method.benefit,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.black87,
-                                  height: 1.2,
-                                ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            method.icon,
-                            size: 18,
-                            color: method.typeColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Consumer<UserProvider>(
-                            builder: (context, userProvider, child) {
-                              final isFav = userProvider.isFavorite(method.id);
-                              return GestureDetector(
-                                onTap: () => userProvider.toggleFavorite(method.id),
-                                child: Icon(
-                                  isFav ? Icons.favorite : Icons.favorite_border,
-                                  size: 18,
-                                  color: isFav ? Colors.red : method.typeColor,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                        child: Icon(method.icon, size: 20, color: method.typeColor),
                       ),
+                      Consumer<UserProvider>(
+                        builder: (context, userProvider, child) {
+                          final isFav = userProvider.isFavorite(method.id);
+                          return GestureDetector(
+                            onTap: () => userProvider.toggleFavorite(method.id),
+                            child: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              size: 20,
+                              color: isFav ? Colors.red : colorScheme.outlineVariant,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    method.title.toUpperCase(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: -0.5,
+                      height: 1.1,
                     ),
-                  ],
-                ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule, size: 10, color: colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Text(
+                        '30m', // Default placeholder if not in model
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

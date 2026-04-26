@@ -5,15 +5,15 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/method_provider.dart';
 import 'providers/workshop_provider.dart';
-import 'screens/home_screen.dart';
+import 'providers/chat_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/library_screen.dart';
-import 'screens/workshop_screen.dart';
 import 'screens/workshop_detail_screen.dart';
 import 'screens/favorites_screen.dart';
+import 'screens/chat_screen.dart';
 import 'models/workshop.dart';
 import 'colorscheme.dart';
+import 'widgets/main_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,14 +26,15 @@ void main() async {
           create: (context) => UserProvider(null),
           update: (context, auth, previous) {
             if (previous != null) {
-              previous.updateToken(auth.accessToken);
+              previous.updateAuth(auth);
               return previous;
             }
-            return UserProvider(auth.accessToken);
+            return UserProvider(auth);
           },
         ),
         ChangeNotifierProvider(create: (context) => MethodProvider()),
         ChangeNotifierProvider(create: (context) => WorkshopProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: const Coach(),
     ),
@@ -68,11 +69,10 @@ class Coach extends StatelessWidget {
         return null;
       },
       routes: {
-        '/': (context) => const HomePage(title: 'Coach'),
+        '/': (context) => const MainShell(),
         '/profile': (context) => const ProfileScreen(),
-        '/library': (context) => const LibraryScreen(),
-        '/workshop': (context) => const WorkshopScreen(),
         '/favorites': (context) => const FavoritesScreen(),
+        '/chat': (context) => const ChatScreen(),
       },
     );
   }

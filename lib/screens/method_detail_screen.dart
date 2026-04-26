@@ -8,393 +8,310 @@ class MethodDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Method Details', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: const Text('Method Details', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {},
+          ),
         ],
       ),
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeroHeader(context),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildInputOutputSection(context),
-                  const SizedBox(height: 16),
-                  if (method.benefit.isNotEmpty)
-                    _buildCollapsibleSection(
-                      context,
-                      title: 'THE "WHY" / BENEFIT',
-                      content: method.benefit,
-                      icon: Icons.stars,
-                      color: const Color(0xFFE1F5FE),
-                      iconColor: const Color(0xFF0277BD),
-                    ),
-                  if (method.why.isNotEmpty && method.why != method.benefit) ...[
-                    const SizedBox(height: 16),
-                    _buildCollapsibleSection(
-                      context,
-                      title: 'ADDITIONAL CONTEXT (WHY)',
-                      content: method.why,
-                      icon: Icons.help_outline,
-                      color: const Color(0xFFFFF9C4),
-                      iconColor: const Color(0xFFF57F17),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  _buildProcessSection(context),
-                  if (method.tags.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Tags',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: method.tags
-                            .map((tag) => Chip(
-                                  label: Text(tag),
-                                  backgroundColor: Colors.white,
-                                  side: BorderSide(color: Colors.grey.shade200),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                ))
-                            .toList(),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeroHeader(BuildContext context) {
-    return Container(
-      height: 220,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: method.typeColor.withOpacity(0.8),
-      ),
-      child: Stack(
-        children: [
-          // Placeholder pattern or image
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.2,
-              child: Icon(method.icon, size: 200, color: Colors.white),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: method.typeColor,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        method.methodType.toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        _formatRange(method.minTime, method.maxTime, 'MINUTES'),
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  method.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInputOutputSection(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: _buildInfoCard(
-            context,
-            title: 'METHOD INPUT',
-            content: method.methodInput,
-            icon: Icons.layers_outlined,
-            iconColor: const Color(0xFF006590),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildInfoCard(
-            context,
-            title: 'METHOD OUTPUT',
-            content: method.methodOutput,
-            icon: Icons.assignment_outlined,
-            iconColor: const Color(0xFF845400),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoCard(BuildContext context,
-      {required String title, required String content, required IconData icon, required Color iconColor}) {
-    // Basic splitting, improved to avoid empty strings
-    final items = content
-        .split(RegExp(r'[,.\n]'))
-        .map((s) => s.trim())
-        .where((s) => s.length > 1) // Avoid single chars/punctuation
-        .toList();
-
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, size: 16, color: iconColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: iconColor,
+            // Hero Section
+            Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: const DecorationImage(
+                  image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuDOFd1Ucr6JHagj6FOSc1WeUFAcgrW-n0uVujmYR-s1bTbYoblMj2p1Ji0aEqG9Pw7wJzGWUlE2-iqYrd4l5Et2huBJhZQN1O_Z9RfMNBTrClt6l5zymhIs868l2glAj72Ds9eY7S1Z0BdP7sAHaWgNDwZ2gpFgNPPPe7r0lZ_vRXHQWbrJAi-4DFBWpNA499-gcS6mRWyyvY2rRKG5CpK4aSe54xw_9D1p0ZpJJAN8NX3gWQajD6yM7tNRJcTvggEMVe23-f2tp-U'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (items.isEmpty && content.isNotEmpty)
-              Text(content, style: const TextStyle(fontSize: 11, color: Colors.black87))
-            else
-              ...items.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Row(
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6.0),
-                          child: Container(
-                            width: 3,
-                            height: 3,
-                            decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                method.methodType.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                '30 MINUTES',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            item,
-                            style: const TextStyle(fontSize: 11, color: Colors.black87),
+                        const SizedBox(height: 4),
+                        Text(
+                          method.title,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ],
                     ),
-                  )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCollapsibleSection(BuildContext context,
-      {required String title,
-      required String content,
-      required IconData icon,
-      required Color color,
-      required Color iconColor}) {
-    if (content.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: true,
-          leading: Icon(icon, color: iconColor),
-          title: Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: iconColor.withOpacity(0.8),
-              letterSpacing: 0.5,
-            ),
-          ),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                content,
-                style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProcessSection(BuildContext context) {
-    if (method.how.isEmpty) return const SizedBox.shrink();
-
-    final steps = _parseSteps(method.how);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.format_list_bulleted, size: 20, color: Color(0xFF3C627D)),
-            const SizedBox(width: 8),
-            Text(
-              'The "How" / Process',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            const SizedBox(height: 24),
+            // Bento Grid for Meta
+            Row(
+              children: [
+                Expanded(
+                  child: _buildMetaCard(
+                    context,
+                    Icons.psychology,
+                    'METHOD INPUT',
+                    ['Paper & Sharpies', '1-8 Participants', 'Timer'],
+                    colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildMetaCard(
+                    context,
+                    Icons.output,
+                    'METHOD OUTPUT',
+                    ['8 Rough Sketches', 'Diverse Ideas', 'Next-step Focus'],
+                    colorScheme.tertiary,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ...steps.asMap().entries.map((entry) {
-          final index = entry.key + 1;
-          final step = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Container(
+            const SizedBox(height: 24),
+            // Why Section
+            Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F4FA),
-                borderRadius: BorderRadius.circular(8),
+                color: colorScheme.secondaryContainer.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.secondaryContainer),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.stars, color: colorScheme.secondary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'THE "WHY" / BENEFIT',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.secondary,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    method.benefit,
+                    style: TextStyle(color: colorScheme.onSecondaryContainer),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // How Section
+            Row(
+              children: [
+                Icon(Icons.format_list_numbered, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text(
+                  'THE "HOW" / PROCESS',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ..._buildHowSteps(context),
+            const SizedBox(height: 24),
+            // Pro Tip
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF00B0FF),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$index',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  Icon(Icons.lightbulb, color: colorScheme.tertiaryContainer),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      step,
-                      style: const TextStyle(fontSize: 14, height: 1.4),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('PRO TIP:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Keep it quiet. This is an individual exercise to prevent groupthink and ensure diverse perspectives.',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          );
-        }),
-      ],
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
     );
   }
 
-  List<String> _parseSteps(String how) {
-    // Attempt to split by numbered lines
-    final lines = how.split(RegExp(r'\n+'));
-    final steps = <String>[];
-    for (var line in lines) {
-      final trimmed = line.replaceFirst(RegExp(r'^\d+[\.\)]\s*'), '').trim();
-      if (trimmed.isNotEmpty) {
-        steps.add(trimmed);
-      }
-    }
-    // If we only got one step, maybe it's a paragraph we should split by sentences?
-    if (steps.length == 1 && steps[0].contains('. ')) {
-        final sentenceSplit = steps[0].split(RegExp(r'(?<=\.)\s+'));
-        if (sentenceSplit.length > 1) return sentenceSplit;
-    }
-
-    return steps.isEmpty ? [how] : steps;
+  Widget _buildMetaCard(BuildContext context, IconData icon, String title, List<String> items, Color accentColor) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: accentColor),
+              const SizedBox(width: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Row(
+                  children: [
+                    Container(width: 4, height: 4, decoration: BoxDecoration(color: accentColor, shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(item, style: const TextStyle(fontSize: 11))),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
   }
 
-  String _formatRange(int? min, int? max, String unit) {
-    if (min == null && max == null) return 'N/A';
-    if (min != null && max != null) {
-      if (min == max) return '$min $unit';
-      return '$min-$max $unit';
-    }
-    return '${min ?? max} $unit';
+  List<Widget> _buildHowSteps(BuildContext context) {
+    final steps = [
+      {'title': 'Prepare Paper', 'desc': 'Fold a blank piece of A4 paper into 8 sections. This creates a grid for your sketches.'},
+      {'title': 'Set the Clock', 'desc': 'Set a timer for 8 minutes total. You will have exactly 60 seconds per section.'},
+      {'title': 'Sketch Fast', 'desc': 'Sketch one idea per section. Don\'t worry about quality; focus on the core concept and quantity.'},
+      {'title': 'Review & Select', 'desc': 'Once the 8 minutes are up, share your ideas with the group and vote on the strongest concepts.'},
+    ];
+
+    return steps.asMap().entries.map((entry) {
+      final index = entry.key + 1;
+      final step = entry.value;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: Text(
+                  '$index',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(step['title']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(step['desc']!, style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
   }
 }
