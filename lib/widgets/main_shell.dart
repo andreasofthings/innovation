@@ -26,7 +26,7 @@ class _MainShellState extends State<MainShell> {
 
   void _onItemTapped(int index) {
     if (index == 3) {
-      _scaffoldKey.currentState?.openDrawer();
+      _scaffoldKey.currentState?.openEndDrawer();
     } else {
       setState(() {
         _selectedIndex = index;
@@ -58,35 +58,45 @@ class _MainShellState extends State<MainShell> {
         ),
         centerTitle: false,
       ),
-      drawer: Drawer(
+      endDrawer: Drawer(
         child: Column(
           children: [
             UserAccountsDrawerHeader(
               currentAccountPicture: CircleAvatar(
                 backgroundColor: colorScheme.primaryContainer,
-                child: Text(userProfile?.name[0] ?? 'A', style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold, fontSize: 24)),
+                child: Text(
+                  (userProfile?.name.isNotEmpty == true ? userProfile?.name[0] : 'A')!,
+                  style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold, fontSize: 24),
+                ),
               ),
               accountName: Text(
                 userProfile?.name ?? 'Alex Rivers',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
               accountEmail: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(userProfile?.email ?? 'facilitator@example.com'),
+                  Text(
+                    userProfile?.email ?? 'facilitator@example.com',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(2),
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
-                      'COACH LEVEL 42',
+                    child: Text(
+                      'COACH LEVEL ${userProfile?.level ?? 1}',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
+                        color: colorScheme.onPrimaryContainer,
                       ),
                     ),
                   ),

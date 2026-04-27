@@ -13,6 +13,7 @@ class UserProfile {
   final String country;
   final String name;
   final String email;
+  final int level;
   final List<int> favorites;
 
   UserProfile({
@@ -28,6 +29,7 @@ class UserProfile {
     required this.country,
     required this.name,
     required this.email,
+    required this.level,
     this.favorites = const [],
   });
 
@@ -44,6 +46,7 @@ class UserProfile {
     String? country,
     String? name,
     String? email,
+    int? level,
     List<int>? favorites,
   }) {
     return UserProfile(
@@ -59,6 +62,7 @@ class UserProfile {
       country: country ?? this.country,
       name: name ?? this.name,
       email: email ?? this.email,
+      level: level ?? this.level,
       favorites: favorites ?? this.favorites,
     );
   }
@@ -67,6 +71,7 @@ class UserProfile {
     return {
       'name': name,
       'email': email,
+      'level': level,
       'language': language,
       'confidence': confidence,
       'default_workshop_length': defaultWorkshopLength,
@@ -95,6 +100,7 @@ class UserProfile {
       country: map['country'] ?? '',
       name: map['name'] ?? 'User',
       email: map['email'] ?? '',
+      level: map['level'] ?? 1,
       favorites: (map['favorites'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
     );
   }
