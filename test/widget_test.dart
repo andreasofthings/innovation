@@ -24,7 +24,10 @@ void main() {
             },
           ),
           ChangeNotifierProvider(create: (context) => MethodProvider()),
-          ChangeNotifierProvider(create: (context) => WorkshopProvider()),
+          ChangeNotifierProxyProvider<AuthProvider, WorkshopProvider>(
+          create: (context) => WorkshopProvider(null),
+          update: (context, auth, previous) => WorkshopProvider(auth),
+        ),
         ],
         child: const Coach(),
       ),
