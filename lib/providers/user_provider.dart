@@ -94,6 +94,7 @@ class UserProvider extends ChangeNotifier {
       country: '',
       name: 'User',
       email: '',
+      level: 1,
     );
   }
 
