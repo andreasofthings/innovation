@@ -42,7 +42,7 @@ class WorkshopDetailScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      workshop.type == WorkshopType.virtual ? Icons.videocam : Icons.person,
+                      workshop.locationMode == LocationMode.virtual ? Icons.videocam : Icons.person,
                       size: 32,
                       color: colorScheme.onPrimaryContainer,
                     ),
@@ -62,7 +62,7 @@ class WorkshopDetailScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildHeaderTag(context, workshop.type.label, colorScheme.secondaryContainer, colorScheme.onSecondaryContainer),
+                      _buildHeaderTag(context, workshop.locationMode.label, colorScheme.secondaryContainer, colorScheme.onSecondaryContainer),
                       const SizedBox(width: 8),
                       _buildHeaderTag(context, workshop.status.label, colorScheme.primaryContainer, colorScheme.onPrimaryContainer),
                     ],

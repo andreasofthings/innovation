@@ -33,7 +33,16 @@ void main() async {
           },
         ),
         ChangeNotifierProvider(create: (context) => MethodProvider()),
-        ChangeNotifierProvider(create: (context) => WorkshopProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, WorkshopProvider>(
+          create: (context) => WorkshopProvider(null),
+          update: (context, auth, previous) {
+            if (previous != null) {
+              previous.updateAuth(auth);
+              return previous;
+            }
+            return WorkshopProvider(auth);
+          },
+        ),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: const Coach(),
