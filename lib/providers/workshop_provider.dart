@@ -60,7 +60,7 @@ class WorkshopProvider extends ChangeNotifier {
       );
       await _loadFromLocal();
     } catch (e) {
-      debugPrint('Database initialization error: $e');
+      debugPrint('Database initialization error: ');
     }
   }
 
@@ -73,7 +73,7 @@ class WorkshopProvider extends ChangeNotifier {
       }).toList();
       _applyFiltersAndSort();
     } catch (e) {
-      debugPrint('Error loading from local: $e');
+      debugPrint('Error loading from local: ');
     }
   }
 
@@ -90,7 +90,7 @@ class WorkshopProvider extends ChangeNotifier {
         }
       });
     } catch (e) {
-      debugPrint('Error saving to local: $e');
+      debugPrint('Error saving to local: ');
     }
   }
 
@@ -130,22 +130,29 @@ class WorkshopProvider extends ChangeNotifier {
   }
 
   Future<bool> addWorkshop(Workshop workshop) async {
-    // Optimistic update
-    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
-    final tempWorkshop = Workshop(
-      id: tempId,
-      title: workshop.title,
-      locationMode: workshop.locationMode,
-      workshopType: workshop.workshopType,
-      status: workshop.status,
-      date: workshop.date,
-      durationValue: workshop.durationValue,
-      durationUnit: workshop.durationUnit,
-      participantCount: workshop.participantCount,
-    );
+    return _addWorkshopInternal(workshop, isRetry: false);
+  }
 
-    _allWorkshops.add(tempWorkshop);
-    _applyFiltersAndSort();
+  Future<bool> _addWorkshopInternal(Workshop workshop, {required bool isRetry}) async {
+    // Optimistic update
+    Workshop? tempWorkshop;
+    if (!isRetry) {
+        final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+        tempWorkshop = Workshop(
+          id: tempId,
+          title: workshop.title,
+          locationMode: workshop.locationMode,
+          workshopType: workshop.workshopType,
+          status: workshop.status,
+          date: workshop.date,
+          durationValue: workshop.durationValue,
+          durationUnit: workshop.durationUnit,
+          participantCount: workshop.participantCount,
+        );
+
+        _allWorkshops.add(tempWorkshop);
+        _applyFiltersAndSort();
+    }
 
     final token = _auth?.accessToken;
     if (token == null) return false;
@@ -163,26 +170,46 @@ class WorkshopProvider extends ChangeNotifier {
       if (response.statusCode == 201) {
         // Update with actual ID from server
         final newWorkshop = Workshop.fromJson(jsonDecode(response.body));
-        _allWorkshops.remove(tempWorkshop);
+        if (tempWorkshop != null) {
+            _allWorkshops.remove(tempWorkshop);
+        } else {
+            // Find the optimistic one by some criteria if we lost the reference?
+            // Better to keep it.
+        }
         _allWorkshops.add(newWorkshop);
         await _saveToLocal();
         _applyFiltersAndSort();
         return true;
+      } else if (response.statusCode == 401 && !isRetry) {
+        final refreshed = await _auth?.refresh() ?? false;
+        if (refreshed) {
+          return await _addWorkshopInternal(workshop, isRetry: true);
+        }
       }
     } catch (e) {
       debugPrint('Error adding workshop: $e');
     }
 
-    // Fallback if failed but we want to keep it locally?
-    // User requested offline mode, so maybe we should keep it and mark for sync.
-    // For now, let's just keep the optimistic one if it fails (offline support).
+    // Revert on failure if not retry and failed finally
+    if (tempWorkshop != null) {
+        _allWorkshops.remove(tempWorkshop);
+        _applyFiltersAndSort();
+    }
+
     return false;
   }
 
   Future<bool> deleteWorkshop(String id) async {
+    return _deleteWorkshopInternal(id, isRetry: false);
+  }
+
+  Future<bool> _deleteWorkshopInternal(String id, {required bool isRetry}) async {
     final originalWorkshops = List<Workshop>.from(_allWorkshops);
-    _allWorkshops.removeWhere((w) => w.id == id);
-    _applyFiltersAndSort();
+
+    if (!isRetry) {
+        _allWorkshops.removeWhere((w) => w.id == id);
+        _applyFiltersAndSort();
+    }
 
     final token = _auth?.accessToken;
     if (token == null) {
@@ -201,6 +228,11 @@ class WorkshopProvider extends ChangeNotifier {
       if (response.statusCode == 204) {
         await _saveToLocal();
         return true;
+      } else if (response.statusCode == 401 && !isRetry) {
+        final refreshed = await _auth?.refresh() ?? false;
+        if (refreshed) {
+          return await _deleteWorkshopInternal(id, isRetry: true);
+        }
       }
     } catch (e) {
       debugPrint('Error deleting workshop: $e');

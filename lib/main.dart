@@ -6,6 +6,8 @@ import 'providers/user_provider.dart';
 import 'providers/method_provider.dart';
 import 'providers/workshop_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/session_provider.dart';
+import 'providers/participant_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/workshop_detail_screen.dart';
@@ -41,6 +43,26 @@ void main() async {
               return previous;
             }
             return WorkshopProvider(auth);
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, SessionProvider>(
+          create: (context) => SessionProvider(null),
+          update: (context, auth, previous) {
+            if (previous != null) {
+              previous.updateAuth(auth);
+              return previous;
+            }
+            return SessionProvider(auth);
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, ParticipantProvider>(
+          create: (context) => ParticipantProvider(null),
+          update: (context, auth, previous) {
+            if (previous != null) {
+              previous.updateAuth(auth);
+              return previous;
+            }
+            return ParticipantProvider(auth);
           },
         ),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
