@@ -14,8 +14,10 @@ enum LocationMode {
     }
   }
 
-  static LocationMode fromJson(String value) {
-    switch (value.toLowerCase()) {
+  static LocationMode fromJson(dynamic value) {
+    if (value == null) return LocationMode.virtual;
+    final String val = value.toString().toLowerCase();
+    switch (val) {
       case 'onsite':
       case 'on-site':
       case 'on_site':
@@ -95,16 +97,30 @@ class Workshop {
   });
 
   factory Workshop.fromJson(Map<String, dynamic> json) {
+    // Determine date: prefer start_date, then scheduled_at
+    String? dateStr = json['start_date']?.toString() ?? json['scheduled_at']?.toString();
+    DateTime parsedDate = DateTime.now();
+    if (dateStr != null && dateStr.isNotEmpty) {
+        parsedDate = DateTime.tryParse(dateStr) ?? DateTime.now();
+    }
+
+    // Determine status: if not provided, could infer from date?
+    // For now, respect the provided status or default to planned.
+    WorkshopStatus status = WorkshopStatus.planned;
+    if (json['status'] == 'delivered') {
+      status = WorkshopStatus.delivered;
+    }
+
     return Workshop(
       id: json['id']?.toString() ?? '',
-      title: json['title'] ?? '',
-      locationMode: LocationMode.fromJson(json['location_type'] ?? 'virtual'),
-      workshopType: json['workshop_type'] ?? 'design-thinking',
-      status: json['status'] == 'delivered' ? WorkshopStatus.delivered : WorkshopStatus.planned,
-      date: DateTime.tryParse(json['scheduled_at'] ?? '') ?? DateTime.now(),
-      durationValue: json['duration_value'] ?? 0,
-      durationUnit: _durationUnitFromString(json['duration_unit'] ?? 'minutes'),
-      participantCount: json['participant_count'] ?? 0,
+      title: json['title']?.toString() ?? '',
+      locationMode: LocationMode.fromJson(json['location_type']),
+      workshopType: json['workshop_type']?.toString() ?? 'design-thinking',
+      status: status,
+      date: parsedDate,
+      durationValue: int.tryParse(json['duration_value']?.toString() ?? '0') ?? 0,
+      durationUnit: _durationUnitFromString(json['duration_unit']?.toString() ?? 'minutes'),
+      participantCount: int.tryParse(json['participant_count']?.toString() ?? '0') ?? 0,
     );
   }
 
