@@ -112,7 +112,7 @@ class WorkshopProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final dynamic decodedData = jsonDecode(response.body);
-        final List<dynamic> data = (decodedData is Map && decodedData.containsKey('results')) ? decodedData['results'] : decodedData;
+        final List<dynamic> data = (decodedData is Map) ? (decodedData["results"] ?? decodedData["items"] ?? []) : decodedData;
         _allWorkshops = data.map((item) => Workshop.fromJson(item)).toList();
         await _saveToLocal();
         _applyFiltersAndSort();
