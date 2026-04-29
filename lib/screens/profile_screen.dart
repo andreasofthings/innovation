@@ -266,9 +266,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'INTEGRATIONS',
               [
                 SwitchListTile(
-                  title: const Text('Google Calendar', style: TextStyle(fontSize: 14)),
+                  title: const Text('Google Contacts', style: TextStyle(fontSize: 14)),
                   value: profile.isGoogleConnected,
-                  onChanged: null, // Disabled as per requirements
+                  onChanged: (val) {
+                    if (val) {
+                      context.read<AuthProvider>().login();
+                    }
+                  },
                 ),
               ],
             ),
