@@ -159,7 +159,7 @@ class AuthProvider extends ChangeNotifier {
           'client_id': clientId,
           'redirect_uri': redirectUrl,
           'response_type': 'code',
-          'scope': 'openid profile email offline_access goauthentik.io/api',
+          'scope': 'openid profile email offline_access https://www.googleapis.com/auth/contacts.readonly',
           'code_challenge': challenge,
           'code_challenge_method': 'S256',
         };
@@ -198,7 +198,7 @@ class AuthProvider extends ChangeNotifier {
           clientId,
           redirectUrl,
           discoveryUrl: discoveryUrl,
-          scopes: ['openid', 'profile', 'email', 'offline_access', 'goauthentik.io/api'],
+          scopes: ['openid', 'profile', 'email', 'offline_access', 'https://www.googleapis.com/auth/contacts.readonly'],
           additionalParameters: additionalParameters.isNotEmpty ? additionalParameters : null,
         ),
       );
@@ -339,7 +339,7 @@ class AuthProvider extends ChangeNotifier {
           redirectUrl,
           discoveryUrl: discoveryUrl,
           refreshToken: _refreshToken,
-          scopes: ['openid', 'profile', 'email', 'offline_access', 'goauthentik.io/api'],
+          scopes: ['openid', 'profile', 'email', 'offline_access', 'https://www.googleapis.com/auth/contacts.readonly'],
         ),
       );
 

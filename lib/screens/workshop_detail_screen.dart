@@ -6,6 +6,8 @@ import '../models/participant.dart';
 import '../models/session.dart';
 import '../providers/participant_provider.dart';
 import '../providers/session_provider.dart';
+import '../models/contact.dart';
+import '../providers/contact_provider.dart';
 
 class WorkshopDetailScreen extends StatefulWidget {
   final Workshop workshop;
@@ -241,6 +243,35 @@ class _WorkshopDetailScreenState extends State<WorkshopDetailScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Autocomplete<Contact>(
+              displayStringForOption: (Contact option) => option.fullName,
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text == '') {
+                  return const Iterable<Contact>.empty();
+                }
+                final contacts = context.read<ContactProvider>().contacts;
+                return contacts.where((Contact option) {
+                  return option.fullName.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
+                      option.email.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                });
+              },
+              onSelected: (Contact selection) {
+                firstNameController.text = selection.firstName;
+                lastNameController.text = selection.lastName;
+                emailController.text = selection.email;
+              },
+              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  decoration: const InputDecoration(
+                    labelText: 'Search existing contacts...',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 32),
             TextField(controller: firstNameController, decoration: const InputDecoration(labelText: 'First Name')),
             TextField(controller: lastNameController, decoration: const InputDecoration(labelText: 'Last Name')),
             TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
