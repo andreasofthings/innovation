@@ -37,7 +37,8 @@ class SessionProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+        final dynamic decodedData = jsonDecode(response.body);
+        final List<dynamic> data = (decodedData is Map) ? (decodedData["results"] ?? decodedData["items"] ?? []) : decodedData;
         _workshopSessions[workshopId] = data.map((item) => WorkshopSession.fromJson(item)).toList();
       } else if (response.statusCode == 401 && !isRetry) {
         final refreshed = await _auth?.refresh() ?? false;
