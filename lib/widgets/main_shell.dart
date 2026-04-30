@@ -123,6 +123,14 @@ class _MainShellState extends State<MainShell> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.contacts),
+              title: const Text('Contacts'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/contacts');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.chat),
               title: const Text('Chat'),
               onTap: () {

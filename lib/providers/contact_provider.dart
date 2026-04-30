@@ -91,4 +91,38 @@ class ContactProvider extends ChangeNotifier {
     }
     return false;
   }
+
+  Future<bool> syncGoogleContacts({bool isRetry = false}) async {
+    final token = _auth?.accessToken;
+    if (token == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/sync_google_contacts/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await fetchContacts();
+        return true;
+      } else if (response.statusCode == 401 && !isRetry) {
+        final refreshed = await _auth?.refresh() ?? false;
+        if (refreshed) {
+          return await syncGoogleContacts(isRetry: true);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing google contacts: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return false;
+  }
 }
