@@ -14,6 +14,7 @@ import 'screens/profile_screen.dart';
 import 'screens/workshop_detail_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/chat_screen.dart';
+import 'screens/contact_management_screen.dart';
 import 'models/workshop.dart';
 import 'colorscheme.dart';
 import 'widgets/main_shell.dart';
@@ -115,6 +116,7 @@ class Coach extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/favorites': (context) => const FavoritesScreen(),
         '/chat': (context) => const ChatScreen(),
+        '/contacts': (context) => const ContactManagementScreen(),
       },
     );
   }
