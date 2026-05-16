@@ -59,7 +59,7 @@ class ChatProvider extends ChangeNotifier {
 
       // Login with JWT using raw string for login type
       await _client!.login(
-        'm.login.jwt',
+        'org.matrix.login.jwt',
         token: token,
         initialDeviceDisplayName: 'Coach App',
       );
