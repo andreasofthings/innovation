@@ -67,7 +67,7 @@ class ChatProvider extends ChangeNotifier {
 
       // Join the room if not already in it
       _room = _client!.rooms.firstWhere(
-        (r) => r.canonicalAlias == _roomAlias || r.getDisplayName() == _roomAlias,
+        (r) => r.canonicalAlias == _roomAlias || r.getLocalizedDisplayname() == _roomAlias,
         orElse: () => null as dynamic,
       );
 
@@ -80,8 +80,8 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
       });
 
-      if (!_client!.isSyncing) {
-        await _client!.startSync();
+      if (!_client!.syncLoop.isRunning) {
+        _client!.sync();
       }
 
     } catch (e) {
