@@ -80,9 +80,7 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
       });
 
-      if (_client!.syncStatus == SyncStatus.finished) {
-        _client!.sync();
-      }
+      _client!.backgroundSync = true;
 
     } catch (e) {
       _error = 'Chat error: $e';
