@@ -24,7 +24,7 @@ class ChatProvider extends ChangeNotifier {
       return;
     }
 
-    if (_client != null && _client!.isLogged()) {
+    if (_client != null && _client!.isLogged() && _room != null) {
       return;
     }
 
@@ -33,44 +33,56 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      dynamic database;
+      if (_client == null) {
+        dynamic database;
+        if (kIsWeb) {
+          database = await MatrixSdkDatabase.init('CoachChat');
+        } else {
+          final directory = await getApplicationSupportDirectory();
+          final dbPath = '${directory.path}/matrix_sdk.db';
+          database = await MatrixSdkDatabase.init(
+            'CoachChat',
+            database: await sqlite.openDatabase(dbPath),
+          );
+        }
 
-      if (kIsWeb) {
-        // On Web, use the default MatrixSdkDatabase.init which uses web-compatible storage
-        database = await MatrixSdkDatabase.init('CoachChat');
-      } else {
-        // On Native platforms, use sqflite with path_provider
-        final directory = await getApplicationSupportDirectory();
-        final dbPath = '${directory.path}/matrix_sdk.db';
-        database = await MatrixSdkDatabase.init(
+        _client = Client(
           'CoachChat',
-          database: await sqlite.openDatabase(dbPath),
+          database: database,
+        );
+
+        await _client!.init();
+      }
+
+      if (!_client!.isLogged()) {
+        await _client!.checkHomeserver(Uri.https(_homeserverUrl, ''));
+
+        // Login with JWT using raw string for login type
+        await _client!.login(
+          'org.matrix.login.jwt',
+          token: token,
+          initialDeviceDisplayName: 'Coach App',
         );
       }
 
-      _client = Client(
-        'CoachChat',
-        database: database,
+      // Join the room if not already in it
+      _room = _client!.rooms.firstWhere(
+        (r) => r.canonicalAlias == _roomAlias || r.getDisplayName() == _roomAlias,
+        orElse: () => null as dynamic,
       );
 
-      await _client!.init();
-
-      await _client!.checkHomeserver(Uri.https(_homeserverUrl, ''));
-
-      // Login with JWT using raw string for login type
-      await _client!.login(
-        'org.matrix.login.jwt',
-        token: token,
-        initialDeviceDisplayName: 'Coach App',
-      );
-
-      // Join the room using joinRoom and find the room in client.rooms
-      final roomId = await _client!.joinRoom(_roomAlias);
-      _room = _client!.getRoomById(roomId);
+      if (_room == null) {
+        final roomId = await _client!.joinRoom(_roomAlias);
+        _room = _client!.getRoomById(roomId);
+      }
 
       _client!.onSync.stream.listen((SyncUpdate update) {
         notifyListeners();
       });
+
+      if (!_client!.isSyncing) {
+        await _client!.startSync();
+      }
 
     } catch (e) {
       _error = 'Chat error: $e';
