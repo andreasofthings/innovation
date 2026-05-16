@@ -65,18 +65,23 @@ class ChatProvider extends ChangeNotifier {
         );
       }
 
-      // Join the room if not already in it
+      String? targetRoomId;
       _room = _client!.rooms.firstWhere(
         (r) => r.canonicalAlias == _roomAlias || r.getLocalizedDisplayname() == _roomAlias,
         orElse: () => null as dynamic,
       );
 
-      if (_room == null) {
-        final roomId = await _client!.joinRoom(_roomAlias);
-        _room = _client!.getRoomById(roomId);
+      if (_room != null) {
+        targetRoomId = _room!.id;
+      } else {
+        targetRoomId = await _client!.joinRoom(_roomAlias);
+        _room = _client!.getRoomById(targetRoomId);
       }
 
       _client!.onSync.stream.listen((SyncUpdate update) {
+        if (_room == null && targetRoomId != null) {
+          _room = _client!.getRoomById(targetRoomId!);
+        }
         notifyListeners();
       });
 
