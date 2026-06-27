@@ -97,25 +97,25 @@ class AuthProvider extends ChangeNotifier {
       case 'OAUTH_CLIENT_ID':
         value = const String.fromEnvironment('OAUTH_CLIENT_ID');
         break;
+      case 'OAUTH_CLIENT_SECRET':
+        value = const String.fromEnvironment('OAUTH_CLIENT_SECRET');
+        break;
       case 'OAUTH_REDIRECT_URL':
-        value = const String.fromEnvironment('OAUTH_REDIRECT_URL');
-        if (value.isEmpty) {
-          value = kIsWeb
-              ? 'https://coach.pramari.de/login-callback.html'
-              : 'de.pramari.coach:/oauth2redirect';
-        }
+        value = kIsWeb
+            ? 'https://coach.pramari.de/login-callback.html'
+            : 'de.pramari.coach:/oauth2redirect';
         break;
       case 'OAUTH_DISCOVERY_URL':
-        value = const String.fromEnvironment('OAUTH_DISCOVERY_URL');
-        if (value.isEmpty) {
-          value = 'https://id.pramari.de/application/o/coach/.well-known/openid-configuration';
-        }
+        value = 'https://id.pramari.de/application/o/coach/.well-known/openid-configuration';
         break;
       case 'OAUTH_AUTHORIZATION_ENDPOINT':
-        value = const String.fromEnvironment('OAUTH_AUTHORIZATION_ENDPOINT');
+        value = 'https://id.pramari.de/application/o/authorize/';
         break;
       case 'OAUTH_TOKEN_ENDPOINT':
         value = const String.fromEnvironment('OAUTH_TOKEN_ENDPOINT');
+        if (value.isEmpty) {
+          value = 'https://id.pramari.de/application/o/token/';
+        }
         break;
       default:
         return null;
@@ -202,10 +202,13 @@ class AuthProvider extends ChangeNotifier {
         additionalParameters['idp_hint'] = idpHint;
       }
 
+      final clientSecret = _getConfigValue('OAUTH_CLIENT_SECRET');
+
       final result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           clientId,
           redirectUrl,
+          clientSecret: clientSecret != null && clientSecret.isNotEmpty ? clientSecret : null,
           discoveryUrl: discoveryUrl,
           scopes: ['openid', 'profile', 'email', 'offline_access', 'https://www.googleapis.com/auth/contacts.readonly'],
           additionalParameters: additionalParameters.isNotEmpty ? additionalParameters : null,
@@ -227,6 +230,7 @@ class AuthProvider extends ChangeNotifier {
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
       final tokenEndpoint = _getConfigValue('OAUTH_TOKEN_ENDPOINT');
+      final clientSecret = _getConfigValue('OAUTH_CLIENT_SECRET');
       final verifier = await _secureStorage.read(key: 'code_verifier');
 
       String finalTokenEndpoint = '';
@@ -238,15 +242,20 @@ class AuthProvider extends ChangeNotifier {
         finalTokenEndpoint = discovery['token_endpoint'];
       }
 
+      final Map<String, String> body = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': redirectUrl,
+        'client_id': clientId,
+        'code_verifier': verifier ?? '',
+      };
+      if (clientSecret != null && clientSecret.isNotEmpty) {
+        body['client_secret'] = clientSecret;
+      }
+
       final tokenResponse = await http.post(
         Uri.parse(finalTokenEndpoint),
-        body: {
-          'grant_type': 'authorization_code',
-          'code': code,
-          'redirect_uri': redirectUrl,
-          'client_id': clientId,
-          'code_verifier': verifier ?? '',
-        },
+        body: body,
       );
 
       if (tokenResponse.statusCode == 200) {
@@ -312,6 +321,7 @@ class AuthProvider extends ChangeNotifier {
       final redirectUrl = _getConfigValue('OAUTH_REDIRECT_URL')!;
       final discoveryUrl = _getConfigValue('OAUTH_DISCOVERY_URL')!;
       final tokenEndpoint = _getConfigValue('OAUTH_TOKEN_ENDPOINT');
+      final clientSecret = _getConfigValue('OAUTH_CLIENT_SECRET');
 
       if (kIsWeb) {
         String finalTokenEndpoint = '';
@@ -323,13 +333,18 @@ class AuthProvider extends ChangeNotifier {
           finalTokenEndpoint = discovery['token_endpoint'];
         }
 
+        final Map<String, String> body = {
+          'grant_type': 'refresh_token',
+          'client_id': clientId,
+          'refresh_token': _refreshToken ?? '',
+        };
+        if (clientSecret != null && clientSecret.isNotEmpty) {
+          body['client_secret'] = clientSecret;
+        }
+
         final refreshResponse = await http.post(
           Uri.parse(finalTokenEndpoint),
-          body: {
-            'grant_type': 'refresh_token',
-            'client_id': clientId,
-            'refresh_token': _refreshToken,
-          },
+          body: body,
         );
 
         if (refreshResponse.statusCode == 200) {
@@ -346,6 +361,7 @@ class AuthProvider extends ChangeNotifier {
         TokenRequest(
           clientId,
           redirectUrl,
+          clientSecret: clientSecret != null && clientSecret.isNotEmpty ? clientSecret : null,
           discoveryUrl: discoveryUrl,
           refreshToken: _refreshToken,
           scopes: ['openid', 'profile', 'email', 'offline_access', 'https://www.googleapis.com/auth/contacts.readonly'],
