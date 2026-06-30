@@ -116,7 +116,6 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
   }
 
   void _showCreateDialog(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final titleController = TextEditingController();
     final participantsController = TextEditingController();
     final durationController = TextEditingController();
@@ -238,151 +237,235 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PLANNER',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                        color: colorScheme.primary,
-                      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Stitch Header Section
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Workshop Planner',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.8,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Manage and track your upcoming sessions.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
                     ),
-                    const Text(
-                      'WORKSHOP SESSIONS',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.tune),
-                  style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceContainerHigh,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                   ),
-                  onPressed: () => _showFilterSheet(context),
-                ),
-              ],
-            ),
-          ),
-          // Search
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search sessions...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHigh,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(0),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  InkWell(
+                    onTap: () => _showCreateDialog(context),
+                    borderRadius: BorderRadius.circular(99),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.add,
+                        color: colorScheme.onPrimary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              onChanged: (val) {
-                // Implement search if needed in provider
-              },
             ),
-          ),
-          const Divider(height: 1),
-          // List
-          Expanded(
-            child: Consumer<WorkshopProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading && provider.workshops.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final workshops = provider.workshops;
-                if (workshops.isEmpty) {
-                  return _buildEmptyState(context);
-                }
 
-                final now = DateTime.now();
-                final planned = workshops.where((w) => w.date.isAfter(now)).toList();
-                final done = workshops.where((w) => w.date.isBefore(now)).toList();
-
-                return ListView(
-                  children: [
-                    if (planned.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'PLANNED'),
-                      ...planned.map((w) => _buildWorkshopItem(context, w)),
-                    ],
-                    if (done.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'DONE'),
-                      ...done.map((w) => _buildWorkshopItem(context, w)),
-                    ],
-                  ],
-                );
-              },
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search sessions...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHigh.withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                onChanged: (val) {
+                  // Implement search or dynamic filtering if desired
+                },
+              ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateDialog(context),
-        backgroundColor: colorScheme.primaryContainer,
-        foregroundColor: colorScheme.onPrimaryContainer,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+            const SizedBox(height: 12),
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.outline,
-          letterSpacing: 1.2,
+            // Horizontal Filters Row (Stitch-inspired)
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0, bottom: 8),
+              child: Consumer<WorkshopProvider>(
+                builder: (context, provider, child) {
+                  final activeStatus = provider.statusFilter;
+
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        _buildFilterButton(
+                          context,
+                          label: 'All Workshops',
+                          isSelected: activeStatus == null,
+                          onPressed: () {
+                            provider.setStatusFilter(null);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterButton(
+                          context,
+                          label: 'Upcoming',
+                          isSelected: activeStatus == WorkshopStatus.planned,
+                          onPressed: () {
+                            provider.setStatusFilter(WorkshopStatus.planned);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterButton(
+                          context,
+                          label: 'Past',
+                          isSelected: activeStatus == WorkshopStatus.delivered,
+                          onPressed: () {
+                            provider.setStatusFilter(WorkshopStatus.delivered);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterButton(
+                          context,
+                          label: 'Filters',
+                          isSelected: provider.locationFilter != null,
+                          icon: Icons.tune,
+                          onPressed: () => _showFilterSheet(context),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
+
+            // Bento Cards List
+            Expanded(
+              child: Consumer<WorkshopProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoading && provider.workshops.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final workshops = provider.workshops;
+                  if (workshops.isEmpty) {
+                    return _buildEmptyState(context);
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: workshops.length,
+                    itemBuilder: (context, index) {
+                      return _buildStitchWorkshopCard(context, workshops[index]);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildWorkshopItem(BuildContext context, Workshop workshop) {
+  Widget _buildFilterButton(
+    BuildContext context, {
+    required String label,
+    required bool isSelected,
+    required VoidCallback onPressed,
+    IconData? icon,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isPlanned = workshop.date.isAfter(DateTime.now());
 
-    IconData icon;
-    Color iconBg;
-    Color iconColor;
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(
+            color: isSelected ? colorScheme.primary.withOpacity(0.2) : colorScheme.outlineVariant.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStitchWorkshopCard(BuildContext context, Workshop workshop) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isPlanned = workshop.status == WorkshopStatus.planned;
+
+    IconData locationIcon;
+    Color modeColor;
 
     switch (workshop.locationMode) {
       case LocationMode.virtual:
-        icon = Icons.videocam;
-        iconBg = colorScheme.primaryContainer;
-        iconColor = colorScheme.onPrimaryContainer;
+        locationIcon = Icons.videocam;
+        modeColor = colorScheme.tertiary;
         break;
       case LocationMode.onSite:
-        icon = Icons.person;
-        iconBg = colorScheme.tertiaryContainer;
-        iconColor = colorScheme.onTertiaryContainer;
+        locationIcon = Icons.location_on;
+        modeColor = colorScheme.primary;
         break;
       case LocationMode.hybrid:
-        icon = Icons.desktop_windows;
-        iconBg = colorScheme.primaryContainer;
-        iconColor = colorScheme.onPrimaryContainer;
+        locationIcon = Icons.devices;
+        modeColor = colorScheme.secondary;
         break;
     }
 
@@ -392,11 +475,15 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: colorScheme.error,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: colorScheme.error,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Icon(Icons.delete, color: colorScheme.onError),
       ),
       confirmDismiss: (direction) async {
-        return await showDialog(
+        return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete Workshop'),
@@ -413,81 +500,236 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
       },
       child: InkWell(
         onTap: () => Navigator.pushNamed(context, '/workshop-detail', arguments: workshop),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: iconColor),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            workshop.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text(
-                            workshop.locationMode.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${DateFormat('MMM dd, yyyy').format(workshop.date)} • ${workshop.durationValue} ${workshop.durationUnit.label}',
-                      style: TextStyle(color: colorScheme.secondary, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: () async {
-                  final confirm = await showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Workshop'),
-                      content: const Text('Are you sure you want to delete this workshop?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    context.read<WorkshopProvider>().deleteWorkshop(workshop.id);
-                  }
-                },
+            color: colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: [
+                // Left Indicator Strip
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  child: Container(
+                    color: isPlanned ? colorScheme.primary : colorScheme.outlineVariant,
+                  ),
+                ),
+                // Card Contents
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header: Badges & Status
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              // Workshop Type Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primaryContainer.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  workshop.workshopType.replaceAll('-', ' ').toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Location Mode Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: modeColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(locationIcon, size: 10, color: modeColor),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      workshop.locationMode.label,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                        color: modeColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Status Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPlanned ? colorScheme.secondaryContainer : colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              workshop.status.label,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: isPlanned ? colorScheme.onSecondaryContainer : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Title
+                      Text(
+                        workshop.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Details: Date & Time/Participants
+                      Row(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, size: 14, color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
+                              const SizedBox(width: 4),
+                              Text(
+                                DateFormat('MMM dd, yyyy').format(workshop.date),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 16),
+                          Row(
+                            children: [
+                              Icon(
+                                isPlanned ? Icons.schedule : Icons.group,
+                                size: 14,
+                                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isPlanned
+                                    ? '${workshop.durationValue} ${workshop.durationUnit.label}'
+                                    : '${workshop.participantCount} Participants',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+
+                      // Footer: Avatars Stack & Detail Action
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Avatars (overlapping representation)
+                          Row(
+                            children: [
+                              _buildOverlappingAvatar(context, 'JD', 0),
+                              _buildOverlappingAvatar(context, 'SM', 1),
+                              if (workshop.participantCount > 2)
+                                _buildOverlappingAvatar(context, '+${workshop.participantCount - 2}', 2),
+                            ],
+                          ),
+                          // View Action Indicator
+                          Row(
+                            children: [
+                              if (!isPlanned)
+                                Text(
+                                  'View Outcomes',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.secondary,
+                                  ),
+                                ),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 18,
+                                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlappingAvatar(BuildContext context, String initials, int index) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Transform.translate(
+      offset: Offset(index * -6.0, 0),
+      child: Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colorScheme.surfaceContainerHighest,
+          border: Border.all(
+            color: colorScheme.surfaceContainerLowest,
+            width: 1.5,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
       ),
